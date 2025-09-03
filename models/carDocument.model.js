@@ -18,6 +18,20 @@ module.exports = (sequelize) => {
       rc_image_back: DataTypes.STRING,
       insurance_image: DataTypes.STRING,
       pollution_image: DataTypes.STRING,
+
+      // ✅ New Fastag fields
+      fastag_image: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      trip_start_balance: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      trip_end_balance: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
     },
     { timestamps: false }
   );

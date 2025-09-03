@@ -34,7 +34,7 @@ router.post(
   "/addInsurance",
   verifyToken,
   checkRole(["admin", "host"]),
-  upload.single("insurance_image"),
+  upload.fields([{ name: "insurance_image", maxCount: 1 }]),
   carController.addInsurance
 );
 
@@ -44,14 +44,6 @@ router.post(
   checkRole(["admin", "host"]),
   upload.array("images", 10),
   carController.addImage
-);
-
-router.post(
-  "/addFastTag",
-  verifyToken,
-  checkRole(["admin", "host"]),
-  upload.single("fasttag_number"),
-  carController.addFastTag
 );
 
 router.post(

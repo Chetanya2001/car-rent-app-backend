@@ -74,34 +74,86 @@ exports.addRC = async (req, res) => {
 // Upload Insurance
 exports.addInsurance = async (req, res) => {
   try {
-    const { car_id, insurance_image } = req.body;
+    const { car_id } = req.body;
 
-    await CarDocument.update({ insurance_image }, { where: { car_id } });
+    // Check if car_id is provided
+    if (!car_id) {
+      return res.status(400).json({ message: "car_id is required" });
+    }
 
-    res.status(200).json({ status: "success" });
+    // Check if insurance image is provided
+    if (!req.files || !req.files.insurance_image) {
+      return res.status(400).json({ message: "Insurance image is required" });
+    }
+
+    // Upload insurance image to S3
+    const insuranceImageUrl = await uploadToS3(req.files.insurance_image[0]);
+
+    // Find if document exists for this car
+    let carDoc = await CarDocument.findOne({ where: { car_id } });
+
+    if (!carDoc) {
+      // Create new document with insurance image
+      carDoc = await CarDocument.create({
+        car_id,
+        insurance_image: insuranceImageUrl,
+      });
+    } else {
+      // Update existing document with insurance image
+      carDoc.insurance_image = insuranceImageUrl;
+      await carDoc.save();
+    }
+
+    res.status(200).json({
+      message: "Insurance image uploaded successfully",
+      data: carDoc,
+    });
   } catch (error) {
+    console.error("Error uploading insurance:", error);
     res.status(500).json({
       message: "Error uploading insurance",
       error: error.message,
-      status: "error",
     });
   }
 };
 
 // Upload Car Images
+// ...existing code...
 exports.addImage = async (req, res) => {
   try {
-    const { car_id, images } = req.body;
+    const { car_id } = req.body;
+    const images = req.files;
 
-    if (!images || images.length < 4) {
+    if (!images || !Array.isArray(images)) {
+      return res.status(400).json({
+        message: "No valid images uploaded",
+        error: "Expected an array of files",
+        status: "error",
+      });
+    }
+
+    if (images.length < 4) {
       return res.status(400).json({ error: "At least 4 images are required" });
     }
 
-    const carPhotos = images.map((img) => ({ car_id, car_image: img }));
+    // Upload each image to S3 and get the URL
+    // ...existing code...
+    const carPhotos = await Promise.all(
+      images.map(async (img) => {
+        const s3Url = await uploadToS3(img);
+        return {
+          car_id,
+          photo_url: s3Url, // <-- use photo_url to match your DB column
+        };
+      })
+    );
+    // ...existing code...
+
     await CarPhoto.bulkCreate(carPhotos);
 
-    res.status(200).json({ status: "success" });
+    res.status(200).json({ status: "success", images: carPhotos });
   } catch (error) {
+    console.error("Controller error:", error);
     res.status(500).json({
       message: "Error uploading car images",
       error: error.message,
@@ -109,23 +161,7 @@ exports.addImage = async (req, res) => {
     });
   }
 };
-
-// Upload FastTAG
-exports.addFastTag = async (req, res) => {
-  try {
-    const { car_id, fasttag_number } = req.body;
-
-    await CarDocument.update({ fasttag_number }, { where: { car_id } });
-
-    res.status(200).json({ status: "success" });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error uploading FastTAG",
-      error: error.message,
-      status: "error",
-    });
-  }
-};
+// ...existing code...
 
 // Update KMS Driven
 exports.updateKMS = async (req, res) => {
