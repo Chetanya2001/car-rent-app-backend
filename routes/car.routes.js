@@ -45,6 +45,13 @@ router.post(
   upload.array("images", 10),
   carController.addImage
 );
+router.post(
+  "/addFastag",
+  verifyToken,
+  checkRole(["admin", "host"]),
+  upload.fields([{ name: "fastag_image", maxCount: 1 }]),
+  carController.addFastag
+);
 
 router.post(
   "/updateKMS",
@@ -58,6 +65,41 @@ router.delete(
   verifyToken,
   checkRole(["admin", "host"]),
   carController.deleteCar
+);
+
+router.post(
+  "/car-locations",
+  verifyToken,
+  checkRole(["admin", "host"]),
+  carController.createCarLocation
+);
+
+router.get(
+  "/car-locations",
+  verifyToken,
+  checkRole(["admin", "host"]),
+  carController.getAllCarLocations
+);
+
+router.get(
+  "/car-locations/:id",
+  verifyToken,
+  checkRole(["admin", "host"]),
+  carController.getCarLocationById
+);
+
+router.put(
+  "/car-locations/:id",
+  verifyToken,
+  checkRole(["admin", "host"]),
+  carController.updateCarLocation
+);
+
+router.delete(
+  "/car-locations/:id",
+  verifyToken,
+  checkRole(["admin", "host"]),
+  carController.deleteCarLocation
 );
 
 module.exports = router;

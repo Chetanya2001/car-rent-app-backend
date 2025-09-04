@@ -1,4 +1,4 @@
-const { Car, CarDocument, CarPhoto } = require("../models");
+const { Car, CarDocument, CarPhoto, CarLocation } = require("../models");
 const { uploadToS3 } = require("../utils/s3Upload");
 // Add Car
 exports.addCar = async (req, res) => {
@@ -161,7 +161,58 @@ exports.addImage = async (req, res) => {
     });
   }
 };
-// ...existing code...
+// Upload Fastag
+exports.addFastag = async (req, res) => {
+  try {
+    const { car_id, trip_start_balance, trip_end_balance } = req.body;
+
+    // ✅ Ensure car_id exists
+    if (!car_id) {
+      return res.status(400).json({ message: "car_id is required" });
+    }
+
+    // ✅ Ensure Fastag image is provided
+    if (!req.files || !req.files.fastag_image) {
+      return res.status(400).json({ message: "Fastag image is required" });
+    }
+
+    // ✅ Upload Fastag image to S3
+    const fastagUrl = await uploadToS3(req.files.fastag_image[0]);
+
+    // ✅ Check if document already exists
+    let carDoc = await CarDocument.findOne({ where: { car_id } });
+
+    if (!carDoc) {
+      // Create new CarDocument with Fastag
+      carDoc = await CarDocument.create({
+        car_id,
+        fastag_image: fastagUrl,
+        trip_start_balance: trip_start_balance || null,
+        trip_end_balance: trip_end_balance || null,
+      });
+    } else {
+      // Update existing CarDocument
+      carDoc.fastag_image = fastagUrl;
+      if (trip_start_balance !== undefined)
+        carDoc.trip_start_balance = trip_start_balance;
+      if (trip_end_balance !== undefined)
+        carDoc.trip_end_balance = trip_end_balance;
+
+      await carDoc.save();
+    }
+
+    res.status(200).json({
+      message: "Fastag uploaded successfully",
+      data: carDoc,
+    });
+  } catch (error) {
+    console.error("Error uploading Fastag:", error);
+    res.status(500).json({
+      message: "Error uploading Fastag",
+      error: error.message,
+    });
+  }
+};
 
 // Update KMS Driven
 exports.updateKMS = async (req, res) => {
@@ -196,5 +247,97 @@ exports.deleteCar = async (req, res) => {
       error: error.message,
       status: "error",
     });
+  }
+};
+
+// ========== CREATE ==========
+exports.createCarLocation = async (req, res) => {
+  try {
+    const { car_id, city, address, latitude, longitude } = req.body;
+
+    const carLocation = await CarLocation.create({
+      car_id,
+      city,
+      address,
+      latitude,
+      longitude,
+    });
+
+    res.status(201).json({ message: "Car location created", carLocation });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error creating car location", error: error.message });
+  }
+};
+
+// ========== READ ALL ==========
+exports.getAllCarLocations = async (req, res) => {
+  try {
+    const carLocations = await CarLocation.findAll();
+    res.status(200).json(carLocations);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching car locations", error: error.message });
+  }
+};
+
+// ========== READ ONE ==========
+exports.getCarLocationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const carLocation = await CarLocation.findByPk(id);
+    if (!carLocation) {
+      return res.status(404).json({ message: "Car location not found" });
+    }
+
+    res.status(200).json(carLocation);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching car location", error: error.message });
+  }
+};
+
+// ========== UPDATE ==========
+exports.updateCarLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { city, address, latitude, longitude } = req.body;
+
+    const carLocation = await CarLocation.findByPk(id);
+    if (!carLocation) {
+      return res.status(404).json({ message: "Car location not found" });
+    }
+
+    await carLocation.update({ city, address, latitude, longitude });
+
+    res.status(200).json({ message: "Car location updated", carLocation });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error updating car location", error: error.message });
+  }
+};
+
+// ========== DELETE ==========
+exports.deleteCarLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const carLocation = await CarLocation.findByPk(id);
+    if (!carLocation) {
+      return res.status(404).json({ message: "Car location not found" });
+    }
+
+    await carLocation.destroy();
+
+    res.status(200).json({ message: "Car location deleted" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error deleting car location", error: error.message });
   }
 };

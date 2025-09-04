@@ -1,5 +1,5 @@
 // controllers/userProfileController.js
-const { UserProfile, UserBankDetails, UserDocument } = require("../models");
+const { UserProfile, UserBankDetails, UserDocuments } = require("../models");
 const { uploadToS3 } = require("../utils/s3Upload");
 
 // ================== Add Profile Image ==================
@@ -80,7 +80,7 @@ exports.addBankDetails = async (req, res) => {
 // ================== Upload Driving License ==================
 exports.uploadDL = async (req, res) => {
   try {
-    const { user_id } = req.body;
+    const user_id = req.user.id;
 
     if (!req.files || !req.files.image_FR || !req.files.image_BK) {
       return res
@@ -91,11 +91,11 @@ exports.uploadDL = async (req, res) => {
     const frontUrl = await uploadToS3(req.files.image_FR[0]);
     const backUrl = await uploadToS3(req.files.image_BK[0]);
 
-    const dlDoc = await UserDocument.create({
-      user_id,
+    const dlDoc = await UserDocuments.create({
+      user_id: user_id,
       doc_type: "DL",
-      image_front: frontUrl,
-      image_back: backUrl,
+      image_fr: frontUrl,
+      image_bk: backUrl,
     });
 
     res.status(201).json({ message: "Driving License uploaded", dlDoc });
@@ -109,7 +109,7 @@ exports.uploadDL = async (req, res) => {
 // ================== Upload Govt ID ==================
 exports.uploadGID = async (req, res) => {
   try {
-    const { user_id } = req.body;
+    const user_id = req.user.id;
 
     if (!req.files || !req.files.image_FR || !req.files.image_BK) {
       return res
@@ -120,11 +120,11 @@ exports.uploadGID = async (req, res) => {
     const frontUrl = await uploadToS3(req.files.image_FR[0]);
     const backUrl = await uploadToS3(req.files.image_BK[0]);
 
-    const gidDoc = await UserDocument.create({
-      user_id,
+    const gidDoc = await UserDocuments.create({
+      user_id: user_id,
       doc_type: "GovtID",
-      image_front: frontUrl,
-      image_back: backUrl,
+      image_fr: frontUrl,
+      image_bk: backUrl,
     });
 
     res.status(201).json({ message: "Govt ID uploaded", gidDoc });
