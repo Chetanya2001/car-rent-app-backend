@@ -20,4 +20,6 @@ router.get(
   userController.getAllUsers
 );
 
+router.get("/verify-email", userController.verifyEmail);
+
 module.exports = router;

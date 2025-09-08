@@ -52,7 +52,22 @@ exports.register = async (req, res) => {
       from: `"Car Rent App" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: "Verify your email",
-      html: `<p>Hello ${first_name}, click <a href="${verifyUrl}">here</a> to verify your account.</p>`,
+      html: `
+    <div style="font-family: Arial, sans-serif;">
+      <h2>Hello ${first_name},</h2>
+      <p>Click the link below to verify your account:</p>
+      <a href="${verifyUrl}"
+         style="background: #4CAF50; color: white; padding: 10px 15px; 
+                text-decoration: none; border-radius: 5px;">
+        Verify Account
+      </a>
+      <p style="margin-top:20px;">Or copy this token:</p>
+      <p style="font-size:16px; font-weight:bold; color:#d9534f;">
+        ${token}
+      </p>
+      <p>If you didn’t register, ignore this email.</p>
+    </div>
+  `,
     });
 
     return res
@@ -65,6 +80,7 @@ exports.register = async (req, res) => {
 };
 
 // Login user
+// Login user
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -76,18 +92,50 @@ exports.login = async (req, res) => {
     if (!validPass)
       return res.status(401).json({ message: "Invalid password" });
 
+    // 🚨 Check email verified
+    if (!user.is_verified) {
+      return res
+        .status(403)
+        .json({ message: "Please verify your email first" });
+    }
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "12h",
-      }
+      { expiresIn: "12h" }
     );
 
     return res.json({ message: "Login successful", token });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Login failed" });
+  }
+};
+
+// Verify Email
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) return res.status(400).json({ message: "Token required" });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Find user
+    const user = await User.findByPk(decoded.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.is_verified) {
+      return res.json({ message: "Email already verified" });
+    }
+
+    user.is_verified = true;
+    await user.save();
+
+    return res.json({ message: "✅ Email verified successfully!" });
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ message: "❌ Invalid or expired token" });
   }
 };
 

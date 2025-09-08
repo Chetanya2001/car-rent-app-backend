@@ -3,7 +3,15 @@ const { uploadToS3 } = require("../utils/s3Upload");
 // Add Car
 exports.addCar = async (req, res) => {
   try {
-    const { make, model, year, kms_driven, rc_number, host_id } = req.body;
+    const {
+      make,
+      model,
+      year,
+      kms_driven,
+      rc_number,
+      price_per_hour,
+      host_id,
+    } = req.body;
 
     const car = await Car.create({
       make,
@@ -11,6 +19,7 @@ exports.addCar = async (req, res) => {
       year,
       kms_driven,
       rc_number,
+      price_per_hour,
       host_id,
     });
 
@@ -137,7 +146,6 @@ exports.addImage = async (req, res) => {
     }
 
     // Upload each image to S3 and get the URL
-    // ...existing code...
     const carPhotos = await Promise.all(
       images.map(async (img) => {
         const s3Url = await uploadToS3(img);
@@ -147,7 +155,6 @@ exports.addImage = async (req, res) => {
         };
       })
     );
-    // ...existing code...
 
     await CarPhoto.bulkCreate(carPhotos);
 
@@ -339,5 +346,33 @@ exports.deleteCarLocation = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting car location", error: error.message });
+  }
+};
+
+exports.getCars = async (req, res) => {
+  try {
+    const cars = await Car.findAll({
+      include: [
+        {
+          model: CarPhoto,
+          attributes: ["photo_url"], // assuming CarPhoto has a `url` field
+          limit: 1,
+        },
+      ],
+    });
+
+    const formattedCars = cars.map((car) => ({
+      id: car.id,
+      name: car.model,
+      brand: car.make,
+      year: car.year,
+      price: parseFloat(car.price_per_hour),
+      image: car.CarPhotos.length > 0 ? car.CarPhotos[0].photo_url : null,
+    }));
+
+    res.json(formattedCars);
+  } catch (err) {
+    console.error("Error fetching cars:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };

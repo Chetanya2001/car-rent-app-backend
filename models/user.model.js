@@ -11,6 +11,9 @@ module.exports = (sequelize) => {
       password_hash: DataTypes.STRING,
       role: { type: DataTypes.ENUM("admin", "host", "guest") },
       is_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
+      whatsapp_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
+      whatsapp_code: { type: DataTypes.STRING },
+      whatsapp_code_expires: { type: DataTypes.DATE },
     },
     { timestamps: true }
   );

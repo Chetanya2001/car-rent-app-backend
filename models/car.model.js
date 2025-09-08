@@ -18,6 +18,10 @@ module.exports = (sequelize) => {
           "inactive"
         ),
       },
+      price_per_hour: {
+        type: DataTypes.DECIMAL(10, 2), // 👈 stores price like 250.00
+        allowNull: false,
+      },
     },
     { timestamps: true }
   );

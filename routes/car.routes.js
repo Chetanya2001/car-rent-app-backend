@@ -102,4 +102,6 @@ router.delete(
   carController.deleteCarLocation
 );
 
+router.get("/", carController.getCars);
+
 module.exports = router;
