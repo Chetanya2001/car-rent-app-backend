@@ -19,7 +19,15 @@ module.exports = (sequelize) => {
         ),
       },
       price_per_hour: {
-        type: DataTypes.DECIMAL(10, 2), // 👈 stores price like 250.00
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      available_from: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      available_till: {
+        type: DataTypes.DATE,
         allowNull: false,
       },
     },
