@@ -3,23 +3,13 @@ const { uploadToS3 } = require("../utils/s3Upload");
 // Add Car
 exports.addCar = async (req, res) => {
   try {
-    const {
-      make,
-      model,
-      year,
-      kms_driven,
-      rc_number,
-      price_per_hour,
-      host_id,
-    } = req.body;
+    host_id = req.user.id;
+    const { make, model, year } = req.body;
 
     const car = await Car.create({
       make,
       model,
       year,
-      kms_driven,
-      rc_number,
-      price_per_hour,
       host_id,
     });
 

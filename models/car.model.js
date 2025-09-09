@@ -4,11 +4,23 @@ module.exports = (sequelize) => {
   const Car = sequelize.define(
     "Car",
     {
-      make: DataTypes.STRING,
-      model: DataTypes.STRING,
-      year: DataTypes.INTEGER,
-      kms_driven: DataTypes.INTEGER,
-      rc_number: DataTypes.STRING,
+      make: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      model: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      year: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      kms_driven: {
+        type: DataTypes.INTEGER,
+        allowNull: true, // optional at creation
+        defaultValue: 0,
+      },
       status: {
         type: DataTypes.ENUM(
           "pending",
@@ -17,18 +29,22 @@ module.exports = (sequelize) => {
           "active",
           "inactive"
         ),
+        defaultValue: "pending", // ✅ default when new car is added
       },
       price_per_hour: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
+        allowNull: true, // optional
+        defaultValue: null,
       },
       available_from: {
         type: DataTypes.DATE,
-        allowNull: false,
+        allowNull: true,
+        defaultValue: null,
       },
       available_till: {
         type: DataTypes.DATE,
-        allowNull: false,
+        allowNull: true,
+        defaultValue: null,
       },
     },
     { timestamps: true }

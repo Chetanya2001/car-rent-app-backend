@@ -44,38 +44,40 @@ module.exports = (sequelize) => {
       },
       owner_name: {
         type: DataTypes.STRING,
-        allowNull: false, // Required, as owner name is mandatory on RC
+        allowNull: true,
       },
       rc_number: {
         type: DataTypes.STRING,
-        allowNull: false, // Required, as RC number is unique and mandatory
-        unique: true, // Ensure RC number is unique across records
+        allowNull: true,
+        unique: true,
       },
       city_of_registration: {
         type: DataTypes.STRING,
-        allowNull: false, // Required, as city of registration is mandatory
+        allowNull: false, // mandatory
       },
       rc_valid_till: {
         type: DataTypes.DATEONLY,
-        allowNull: false, // Required, as RC validity date is mandatory
+        allowNull: true,
+        defaultValue: null, // ✅ prevents MySQL from inserting '0000-00-00'
       },
       insurance_company: {
         type: DataTypes.STRING,
-        allowNull: false, // Required, as insurance company is mandatory
+        allowNull: true,
       },
       insurance_idv_value: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false, // Required, as IDV is a critical insurance detail
+        allowNull: true,
         validate: {
-          min: 0, // Ensure IDV is non-negative
+          min: 0,
         },
       },
       insurance_valid_till: {
         type: DataTypes.DATEONLY,
-        allowNull: false, // Required, as insurance validity date is mandatory
+        allowNull: true,
+        defaultValue: null, // ✅ prevents '0000-00-00'
       },
     },
-    { timestamps: false }
+    { timestamps: true }
   );
 
   CarDocument.associate = (models) => {
