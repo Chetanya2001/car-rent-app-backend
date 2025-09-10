@@ -25,7 +25,13 @@ exports.addCar = async (req, res) => {
 
 exports.addRC = async (req, res) => {
   try {
-    const { car_id } = req.body;
+    const {
+      car_id,
+      owner_name,
+      rc_number,
+      rc_valid_till,
+      city_of_registration,
+    } = req.body;
 
     // Check if car_id is passed
     if (!car_id) {
@@ -50,16 +56,24 @@ exports.addRC = async (req, res) => {
         car_id,
         rc_image_front: rcFrontUrl,
         rc_image_back: rcBackUrl,
+        owner_name,
+        rc_number,
+        rc_valid_till,
+        city_of_registration,
       });
     } else {
       // Update existing RC document
       carDoc.rc_image_front = rcFrontUrl;
       carDoc.rc_image_back = rcBackUrl;
+      carDoc.owner_name = owner_name;
+      carDoc.rc_number = rc_number;
+      carDoc.rc_valid_till = rc_valid_till;
+      carDoc.city_of_registration = city_of_registration;
       await carDoc.save();
     }
 
     res.status(200).json({
-      message: "RC images uploaded successfully",
+      message: "RC details uploaded successfully",
       data: carDoc,
     });
   } catch (error) {
@@ -70,19 +84,46 @@ exports.addRC = async (req, res) => {
     });
   }
 };
+
 // Upload Insurance
 exports.addInsurance = async (req, res) => {
   try {
-    const { car_id } = req.body;
+    const {
+      car_id,
+      insurance_company,
+      insurance_idv_value,
+      insurance_valid_till,
+    } = req.body;
 
-    // Check if car_id is provided
+    // Check if required fields are provided
     if (!car_id) {
       return res.status(400).json({ message: "car_id is required" });
+    }
+    if (!insurance_company) {
+      return res.status(400).json({ message: "insurance_company is required" });
+    }
+    if (insurance_idv_value === undefined || insurance_idv_value === null) {
+      return res
+        .status(400)
+        .json({ message: "insurance_idv_value is required" });
+    }
+    if (!insurance_valid_till) {
+      return res
+        .status(400)
+        .json({ message: "insurance_valid_till is required" });
     }
 
     // Check if insurance image is provided
     if (!req.files || !req.files.insurance_image) {
       return res.status(400).json({ message: "Insurance image is required" });
+    }
+
+    // Validate and format insurance_idv_value to DECIMAL(10, 2)
+    const formattedIdv = parseFloat(insurance_idv_value).toFixed(2);
+    if (isNaN(formattedIdv) || formattedIdv < 0) {
+      return res.status(400).json({
+        message: "insurance_idv_value must be a valid non-negative number",
+      });
     }
 
     // Upload insurance image to S3
@@ -92,25 +133,31 @@ exports.addInsurance = async (req, res) => {
     let carDoc = await CarDocument.findOne({ where: { car_id } });
 
     if (!carDoc) {
-      // Create new document with insurance image
+      // Create new document with all insurance details
       carDoc = await CarDocument.create({
         car_id,
         insurance_image: insuranceImageUrl,
+        insurance_company,
+        insurance_idv_value: formattedIdv,
+        insurance_valid_till,
       });
     } else {
-      // Update existing document with insurance image
+      // Update existing document with all insurance details
       carDoc.insurance_image = insuranceImageUrl;
+      carDoc.insurance_company = insurance_company;
+      carDoc.insurance_idv_value = formattedIdv;
+      carDoc.insurance_valid_till = insurance_valid_till;
       await carDoc.save();
     }
 
     res.status(200).json({
-      message: "Insurance image uploaded successfully",
+      message: "Insurance details uploaded successfully",
       data: carDoc,
     });
   } catch (error) {
     console.error("Error uploading insurance:", error);
     res.status(500).json({
-      message: "Error uploading insurance",
+      message: "Error uploading insurance details",
       error: error.message,
     });
   }
@@ -364,5 +411,45 @@ exports.getCars = async (req, res) => {
   } catch (err) {
     console.error("Error fetching cars:", err);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Update Car Availability & Rent
+exports.updateAvailability = async (req, res) => {
+  try {
+    const { car_id, price_per_hour, available_from, available_till } = req.body;
+
+    if (!car_id) {
+      return res.status(400).json({ message: "car_id is required" });
+    }
+    if (!price_per_hour || !available_from || !available_till) {
+      return res.status(400).json({
+        message:
+          "price_per_hour, available_from, and available_till are required",
+      });
+    }
+
+    const car = await Car.findByPk(car_id);
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+
+    await car.update({
+      price_per_hour,
+      available_from,
+      available_till,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Car availability updated successfully",
+      data: car,
+    });
+  } catch (error) {
+    console.error("Error updating availability:", error);
+    res.status(500).json({
+      message: "Error updating car availability",
+      error: error.message,
+    });
   }
 };

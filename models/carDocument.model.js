@@ -53,7 +53,7 @@ module.exports = (sequelize) => {
       },
       city_of_registration: {
         type: DataTypes.STRING,
-        allowNull: false, // mandatory
+        allowNull: true, // mandatory
       },
       rc_valid_till: {
         type: DataTypes.DATEONLY,

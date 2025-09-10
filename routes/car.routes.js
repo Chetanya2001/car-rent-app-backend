@@ -104,4 +104,6 @@ router.delete(
 
 router.get("/", carController.getCars);
 
+router.post("/more-details", carController.updateAvailability);
+
 module.exports = router;
