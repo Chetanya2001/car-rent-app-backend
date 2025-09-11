@@ -106,4 +106,6 @@ router.get("/", carController.getCars);
 
 router.post("/more-details", carController.updateAvailability);
 
+router.post("/search", carController.searchCars);
+
 module.exports = router;

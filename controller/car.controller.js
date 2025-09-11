@@ -1,4 +1,11 @@
-const { Car, CarDocument, CarPhoto, CarLocation } = require("../models");
+const {
+  Car,
+  CarDocument,
+  CarPhoto,
+  CarLocation,
+  Booking,
+} = require("../models");
+const { Op } = require("sequelize");
 const { uploadToS3 } = require("../utils/s3Upload");
 // Add Car
 exports.addCar = async (req, res) => {
@@ -449,6 +456,95 @@ exports.updateAvailability = async (req, res) => {
     console.error("Error updating availability:", error);
     res.status(500).json({
       message: "Error updating car availability",
+      error: error.message,
+    });
+  }
+};
+// Search Cars API
+exports.searchCars = async (req, res) => {
+  try {
+    const { city, pickup_datetime, dropoff_datetime } = req.body;
+
+    if (!city || !pickup_datetime || !dropoff_datetime) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const pickup = new Date(pickup_datetime);
+    const dropoff = new Date(dropoff_datetime);
+
+    // Step 1: fetch cars with matching city + availability window
+    const cars = await Car.findAll({
+      where: {
+        available_from: { [Op.lte]: pickup },
+        available_till: { [Op.gte]: dropoff },
+      },
+      include: [
+        {
+          model: CarDocument,
+          required: true,
+          where: { city_of_registration: city },
+          attributes: [
+            "car_id",
+            "rc_image_front",
+            "rc_image_back",
+            "owner_name",
+            "insurance_company",
+            "insurance_idv_value",
+            "insurance_image",
+            "rc_number",
+            "rc_valid_till",
+          ], // only needed fields
+        },
+        {
+          model: CarPhoto,
+          required: false, // may not have photos
+          attributes: ["photo_url"], // only return URL
+        },
+        {
+          model: Booking,
+          required: false,
+          attributes: ["id", "start_datetime", "end_datetime"], // only minimal booking info
+          where: {
+            [Op.or]: [
+              {
+                start_datetime: { [Op.lte]: pickup },
+                end_datetime: { [Op.gte]: pickup },
+              },
+              {
+                start_datetime: { [Op.lte]: dropoff },
+                end_datetime: { [Op.gte]: dropoff },
+              },
+              {
+                start_datetime: { [Op.gte]: pickup },
+                end_datetime: { [Op.lte]: dropoff },
+              },
+            ],
+          },
+        },
+      ],
+      logging: console.log,
+    });
+
+    // Step 2: filter out cars that have conflicting bookings
+    const availableCars = cars
+      .filter((car) => !car.Bookings || car.Bookings.length === 0)
+      .map((car) => ({
+        id: car.id,
+        make: car.make,
+        model: car.model,
+        year: car.year,
+        price_per_hour: car.price_per_hour,
+        available_from: car.available_from,
+        available_till: car.available_till,
+        documents: car.CarDocument, // rc & insurance info
+        photos: car.CarPhotos.map((p) => p.photo_url), // only photo URLs
+      }));
+
+    res.json({ cars: availableCars });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Internal Server Error",
       error: error.message,
     });
   }
