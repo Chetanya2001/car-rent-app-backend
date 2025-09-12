@@ -549,3 +549,67 @@ exports.searchCars = async (req, res) => {
     });
   }
 };
+// Get Cars by Host ID with details (no bookings)
+exports.getCarsByHostId = async (req, res) => {
+  try {
+    const host_id = req.user.id;
+
+    if (!host_id) {
+      return res.status(400).json({ message: "host_id is required" });
+    }
+
+    const cars = await Car.findAll({
+      where: { host_id },
+      include: [
+        {
+          model: CarDocument,
+          attributes: [
+            "car_id",
+            "rc_image_front",
+            "rc_image_back",
+            "owner_name",
+            "insurance_company",
+            "insurance_idv_value",
+            "insurance_image",
+            "rc_number",
+            "rc_valid_till",
+            "city_of_registration",
+            "fastag_image",
+            "trip_start_balance",
+            "trip_end_balance",
+          ],
+        },
+        {
+          model: CarPhoto,
+          attributes: ["photo_url"],
+        },
+      ],
+    });
+
+    if (!cars || cars.length === 0) {
+      return res.status(404).json({ message: "No cars found for this host" });
+    }
+
+    // format response
+    const formattedCars = cars.map((car) => ({
+      id: car.id,
+      make: car.make,
+      model: car.model,
+      year: car.year,
+      price_per_hour: car.price_per_hour,
+      kms_driven: car.kms_driven,
+      available_from: car.available_from,
+      available_till: car.available_till,
+      documents: car.CarDocument || null,
+      photos: car.CarPhotos?.map((p) => p.photo_url) || [],
+    }));
+
+    res.status(200).json({ cars: formattedCars });
+  } catch (error) {
+    console.error("Error fetching cars by host:", error);
+    res.status(500).json({
+      message: "Error fetching cars by host",
+      error: error.message,
+    });
+  }
+};

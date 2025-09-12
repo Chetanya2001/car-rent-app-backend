@@ -108,4 +108,6 @@ router.post("/more-details", carController.updateAvailability);
 
 router.post("/search", carController.searchCars);
 
+router.post("/my-host-cars", verifyToken, carController.getCarsByHostId);
+
 module.exports = router;
