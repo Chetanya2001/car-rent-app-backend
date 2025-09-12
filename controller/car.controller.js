@@ -30,6 +30,37 @@ exports.addCar = async (req, res) => {
   }
 };
 
+exports.updateCar = async (req, res) => {
+  try {
+    const host_id = req.user.id;
+    const { car_id, make, model, year } = req.body;
+
+    // Find car by car_id and host_id (ensures owner is updating their own car)
+    const car = await Car.findOne({ where: { id: car_id, host_id } });
+
+    if (!car) {
+      return res.status(404).json({ message: "Car not found or unauthorized" });
+    }
+
+    // Update only provided fields
+    if (make !== undefined) car.make = make;
+    if (model !== undefined) car.model = model;
+    if (year !== undefined) car.year = year;
+
+    await car.save();
+
+    res.status(200).json({
+      message: "Car updated successfully",
+      car_id: car.id,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating car",
+      error: error.message,
+    });
+  }
+};
+
 exports.addRC = async (req, res) => {
   try {
     const {
@@ -87,6 +118,56 @@ exports.addRC = async (req, res) => {
     console.error("Error uploading RC:", error);
     res.status(500).json({
       message: "Error uploading RC",
+      error: error.message,
+    });
+  }
+};
+exports.updateRC = async (req, res) => {
+  try {
+    const {
+      car_id,
+      owner_name,
+      rc_number,
+      rc_valid_till,
+      city_of_registration,
+    } = req.body || {}; // avoid destructure error
+
+    if (!car_id) {
+      return res.status(400).json({ message: "car_id is required" });
+    }
+
+    let carDoc = await CarDocument.findOne({ where: { car_id } });
+    if (!carDoc) {
+      return res
+        .status(404)
+        .json({ message: "RC document not found for this car" });
+    }
+
+    // Update images if provided
+    if (req.files?.rc_image_front) {
+      carDoc.rc_image_front = await uploadToS3(req.files.rc_image_front[0]);
+    }
+    if (req.files?.rc_image_back) {
+      carDoc.rc_image_back = await uploadToS3(req.files.rc_image_back[0]);
+    }
+
+    // Update text fields if present
+    if (owner_name) carDoc.owner_name = owner_name;
+    if (rc_number) carDoc.rc_number = rc_number;
+    if (rc_valid_till) carDoc.rc_valid_till = rc_valid_till;
+    if (city_of_registration)
+      carDoc.city_of_registration = city_of_registration;
+
+    await carDoc.save();
+
+    res.status(200).json({
+      message: "RC details updated successfully",
+      data: carDoc,
+    });
+  } catch (error) {
+    console.error("Error updating RC:", error);
+    res.status(500).json({
+      message: "Error updating RC",
       error: error.message,
     });
   }

@@ -19,6 +19,13 @@ router.post(
   carController.addCar
 );
 
+router.put(
+  "/updateCar",
+  verifyToken,
+  checkRole(["admin", "host"]),
+  carController.updateCar
+);
+
 router.post(
   "/addRC",
   verifyToken,
@@ -28,6 +35,15 @@ router.post(
     { name: "rc_image_back", maxCount: 1 },
   ]),
   carController.addRC
+);
+
+router.put(
+  "/update-rc",
+  upload.fields([
+    { name: "rc_image_front", maxCount: 1 },
+    { name: "rc_image_back", maxCount: 1 },
+  ]),
+  carController.updateRC
 );
 
 router.post(
