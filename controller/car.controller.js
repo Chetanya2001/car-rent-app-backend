@@ -11,12 +11,13 @@ const { uploadToS3 } = require("../utils/s3Upload");
 exports.addCar = async (req, res) => {
   try {
     host_id = req.user.id;
-    const { make, model, year } = req.body;
+    const { make, model, year, description } = req.body;
 
     const car = await Car.create({
       make,
       model,
       year,
+      description,
       host_id,
     });
 
@@ -33,7 +34,7 @@ exports.addCar = async (req, res) => {
 exports.updateCar = async (req, res) => {
   try {
     const host_id = req.user.id;
-    const { car_id, make, model, year } = req.body;
+    const { car_id, make, model, year, description } = req.body;
 
     // Find car by car_id and host_id (ensures owner is updating their own car)
     const car = await Car.findOne({ where: { id: car_id, host_id } });
@@ -46,6 +47,7 @@ exports.updateCar = async (req, res) => {
     if (make !== undefined) car.make = make;
     if (model !== undefined) car.model = model;
     if (year !== undefined) car.year = year;
+    if (description !== undefined) car.description = description;
 
     await car.save();
 

@@ -46,6 +46,11 @@ module.exports = (sequelize) => {
         allowNull: true,
         defaultValue: null,
       },
+      description: {
+        type: DataTypes.TEXT, // ✅ allows long description
+        allowNull: true,
+        defaultValue: null,
+      },
     },
     { timestamps: true }
   );
