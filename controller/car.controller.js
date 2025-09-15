@@ -482,7 +482,8 @@ exports.getCars = async (req, res) => {
       include: [
         {
           model: CarPhoto,
-          attributes: ["photo_url"], // assuming CarPhoto has a `url` field
+          as: "photos", // ✅ must match association alias
+          attributes: ["photo_url"],
           limit: 1,
         },
       ],
@@ -494,7 +495,7 @@ exports.getCars = async (req, res) => {
       brand: car.make,
       year: car.year,
       price: parseFloat(car.price_per_hour),
-      image: car.CarPhotos.length > 0 ? car.CarPhotos[0].photo_url : null,
+      image: car.photos?.length > 0 ? car.photos[0].photo_url : null, // ✅ use alias
     }));
 
     res.json(formattedCars);
@@ -635,7 +636,7 @@ exports.searchCars = async (req, res) => {
 // Get Cars by Host ID with details (no bookings)
 exports.getCarsByHostId = async (req, res) => {
   try {
-    const host_id = req.user.id;
+    const host_id = req.user?.id;
 
     if (!host_id) {
       return res.status(400).json({ message: "host_id is required" });
@@ -664,6 +665,7 @@ exports.getCarsByHostId = async (req, res) => {
         },
         {
           model: CarPhoto,
+          as: "photos",
           attributes: ["photo_url"],
         },
       ],
@@ -679,11 +681,26 @@ exports.getCarsByHostId = async (req, res) => {
       make: car.make,
       model: car.model,
       year: car.year,
-      price_per_hour: car.price_per_hour,
+      price_per_hour: parseFloat(car.price_per_hour),
       kms_driven: car.kms_driven,
       available_from: car.available_from,
       available_till: car.available_till,
-      documents: car.CarDocument || null,
+      documents: car.CarDocument
+        ? {
+            rc_image_front: car.CarDocument.rc_image_front,
+            rc_image_back: car.CarDocument.rc_image_back,
+            owner_name: car.CarDocument.owner_name,
+            insurance_company: car.CarDocument.insurance_company,
+            insurance_idv_value: car.CarDocument.insurance_idv_value,
+            insurance_image: car.CarDocument.insurance_image,
+            rc_number: car.CarDocument.rc_number,
+            rc_valid_till: car.CarDocument.rc_valid_till,
+            city_of_registration: car.CarDocument.city_of_registration,
+            fastag_image: car.CarDocument.fastag_image,
+            trip_start_balance: car.CarDocument.trip_start_balance,
+            trip_end_balance: car.CarDocument.trip_end_balance,
+          }
+        : null,
       photos: car.CarPhotos?.map((p) => p.photo_url) || [],
     }));
 
