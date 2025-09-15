@@ -556,7 +556,6 @@ exports.searchCars = async (req, res) => {
     const pickup = new Date(pickup_datetime);
     const dropoff = new Date(dropoff_datetime);
 
-    // Step 1: fetch cars with matching city + availability window
     const cars = await Car.findAll({
       where: {
         available_from: { [Op.lte]: pickup },
@@ -577,17 +576,18 @@ exports.searchCars = async (req, res) => {
             "insurance_image",
             "rc_number",
             "rc_valid_till",
-          ], // only needed fields
+          ],
         },
         {
           model: CarPhoto,
-          required: false, // may not have photos
-          attributes: ["photo_url"], // only return URL
+          as: "photos", // must match your model association alias
+          required: false,
+          attributes: ["photo_url"],
         },
         {
           model: Booking,
           required: false,
-          attributes: ["id", "start_datetime", "end_datetime"], // only minimal booking info
+          attributes: ["id", "start_datetime", "end_datetime"],
           where: {
             [Op.or]: [
               {
@@ -609,7 +609,6 @@ exports.searchCars = async (req, res) => {
       logging: console.log,
     });
 
-    // Step 2: filter out cars that have conflicting bookings
     const availableCars = cars
       .filter((car) => !car.Bookings || car.Bookings.length === 0)
       .map((car) => ({
@@ -620,8 +619,8 @@ exports.searchCars = async (req, res) => {
         price_per_hour: car.price_per_hour,
         available_from: car.available_from,
         available_till: car.available_till,
-        documents: car.CarDocument, // rc & insurance info
-        photos: car.CarPhotos.map((p) => p.photo_url), // only photo URLs
+        documents: car.CarDocument, // correct if no alias
+        photos: car.photos?.map((p) => p.photo_url) || [], // ✅ use alias here
       }));
 
     res.json({ cars: availableCars });
@@ -633,6 +632,7 @@ exports.searchCars = async (req, res) => {
     });
   }
 };
+
 // Get Cars by Host ID with details (no bookings)
 exports.getCarsByHostId = async (req, res) => {
   try {
