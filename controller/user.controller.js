@@ -1,25 +1,32 @@
-// controllers/userController.js
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const { User } = require("../models");
 
-// Register user
+// 🔹 Common transporter (Hostinger SMTP)
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST, // smtp.hostinger.com
+  port: process.env.EMAIL_PORT, // 465 or 587
+  secure: process.env.EMAIL_SECURE === "true", // true if using 465
+  auth: {
+    user: process.env.EMAIL_USER, // support@zipdrive.in
+    pass: process.env.EMAIL_PASS, // Support987#
+  },
+});
+
+// ======================= REGISTER =======================
 exports.register = async (req, res) => {
   try {
     const { first_name, last_name, email, phone, password, role } = req.body;
 
-    // ensure role is valid
     if (!["admin", "host", "guest"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
     }
 
-    // check duplicate email
     const existing = await User.findOne({ where: { email } });
     if (existing)
       return res.status(400).json({ message: "Email already in use" });
 
-    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
@@ -31,15 +38,6 @@ exports.register = async (req, res) => {
       role,
     });
 
-    // send verification email (example with Gmail SMTP)
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-      },
-    });
-
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
@@ -49,38 +47,37 @@ exports.register = async (req, res) => {
     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
     await transporter.sendMail({
-      from: `"Car Rent App" <${process.env.GMAIL_USER}>`,
+      from: `"Car Rent App" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Verify your email",
       html: `
-    <div style="font-family: Arial, sans-serif;">
-      <h2>Hello ${first_name},</h2>
-      <p>Click the link below to verify your account:</p>
-      <a href="${verifyUrl}"
-         style="background: #4CAF50; color: white; padding: 10px 15px; 
-                text-decoration: none; border-radius: 5px;">
-        Verify Account
-      </a>
-      <p style="margin-top:20px;">Or copy this token:</p>
-      <p style="font-size:16px; font-weight:bold; color:#d9534f;">
-        ${token}
-      </p>
-      <p>If you didn’t register, ignore this email.</p>
-    </div>
-  `,
+        <div style="font-family: Arial, sans-serif;">
+          <h2>Hello ${first_name},</h2>
+          <p>Click the link below to verify your account:</p>
+          <a href="${verifyUrl}"
+             style="background: #4CAF50; color: white; padding: 10px 15px; 
+                    text-decoration: none; border-radius: 5px;">
+            Verify Account
+          </a>
+          <p style="margin-top:20px;">Or copy this token:</p>
+          <p style="font-size:16px; font-weight:bold; color:#d9534f;">
+            ${token}
+          </p>
+          <p>If you didn’t register, ignore this email.</p>
+        </div>
+      `,
     });
 
-    return res
-      .status(201)
-      .json({ message: "User registered. Verification email sent." });
+    return res.status(201).json({
+      message: "User registered. Verification email sent.",
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Registration failed" });
   }
 };
 
-// Login user
-// Login user
+// ======================= LOGIN =======================
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -92,7 +89,6 @@ exports.login = async (req, res) => {
     if (!validPass)
       return res.status(401).json({ message: "Invalid password" });
 
-    // 🚨 Check email verified
     if (!user.is_verified) {
       return res
         .status(403)
@@ -112,7 +108,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// Verify Email
+// ======================= VERIFY EMAIL =======================
 exports.verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
@@ -121,7 +117,6 @@ exports.verifyEmail = async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Find user
     const user = await User.findByPk(decoded.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -139,7 +134,7 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
-// Password reset request
+// ======================= PASSWORD RESET =======================
 exports.passReset = async (req, res) => {
   try {
     const { email } = req.body;
@@ -152,16 +147,8 @@ exports.passReset = async (req, res) => {
     });
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-      },
-    });
-
     await transporter.sendMail({
-      from: `"Car Rent App" <${process.env.GMAIL_USER}>`,
+      from: `"Car Rent App" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Password Reset",
       html: `<p>Hello ${user.first_name}, click <a href="${resetUrl}">here</a> to reset your password.</p>`,
@@ -174,7 +161,7 @@ exports.passReset = async (req, res) => {
   }
 };
 
-// Get user profile
+// ======================= PROFILE =======================
 exports.profile = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
@@ -197,7 +184,7 @@ exports.profile = async (req, res) => {
   }
 };
 
-// Get all users (admin only)
+// ======================= ALL USERS (ADMIN) =======================
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll({
