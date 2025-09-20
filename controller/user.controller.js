@@ -47,9 +47,9 @@ exports.register = async (req, res) => {
     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
     await transporter.sendMail({
-      from: `"Car Rent App" <${process.env.EMAIL_USER}>`,
+      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Verify your email",
+      subject: "Verification from Zip Drive",
       html: `
         <div style="font-family: Arial, sans-serif;">
           <h2>Hello ${first_name},</h2>
@@ -59,10 +59,6 @@ exports.register = async (req, res) => {
                     text-decoration: none; border-radius: 5px;">
             Verify Account
           </a>
-          <p style="margin-top:20px;">Or copy this token:</p>
-          <p style="font-size:16px; font-weight:bold; color:#d9534f;">
-            ${token}
-          </p>
           <p>If you didn’t register, ignore this email.</p>
         </div>
       `,
