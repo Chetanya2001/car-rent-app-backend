@@ -26,10 +26,15 @@ jobs:
             # Remove existing project entirely
             rm -rf $APP_DIR
 
-            # Clone fresh copy
+            # Clone a fresh copy
             git clone https://github.com/Chetanya2001/car-rent-app-backend.git $APP_DIR
 
             cd $APP_DIR
+
+            # Write .env file from secret
+            cat <<EOF > $APP_DIR/.env
+            ${{ secrets.BACKEND_ENV_FILE }}
+            EOF
 
             # Install dependencies
             npm install
