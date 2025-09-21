@@ -144,7 +144,7 @@ exports.passReset = async (req, res) => {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
     await transporter.sendMail({
-      from: `"Car Rent App" <${process.env.EMAIL_USER}>`,
+      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Password Reset",
       html: `<p>Hello ${user.first_name}, click <a href="${resetUrl}">here</a> to reset your password.</p>`,
