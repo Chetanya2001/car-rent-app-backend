@@ -126,7 +126,7 @@ exports.verifyEmail = async (req, res) => {
     return res.json({ message: "✅ Email verified successfully!" });
   } catch (error) {
     console.error(error);
-    return res.status(400).json({ message: "❌ Invalid or expired token" });
+    return res.status(400).json({ message: "❌ Invalid expired token" });
   }
 };
 
