@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const { User } = require("../models");
-const { sendWhatsAppVerification } = require("../utils/whatsappService");
+// const { sendWhatsAppVerification } = require("../utils/whatsappService");
 
 // 🔹 Common transporter (Hostinger SMTP)
 const transporter = nodemailer.createTransport({
@@ -64,7 +64,7 @@ exports.register = async (req, res) => {
         </div>
       `,
     });
-    await sendWhatsAppVerification(phone, first_name, verifyUrl);
+    // await sendWhatsAppVerification(phone, first_name, verifyUrl);
 
     return res.status(201).json({
       message: "User registered. Verification email sent.",
