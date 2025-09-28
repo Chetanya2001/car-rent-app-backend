@@ -4,17 +4,34 @@ module.exports = (sequelize) => {
   const UserDocuments = sequelize.define(
     "UserDocuments",
     {
+      user_id: {
+        type: DataTypes.INTEGER, // Match User PK type
+        allowNull: false,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+      },
       doc_type: {
-        type: DataTypes.ENUM("DL", "GovtID"),
+        type: DataTypes.ENUM(
+          "Passport",
+          "Driver's License",
+          "National ID Card",
+          "Voter Card",
+          "PAN Card",
+          "Other"
+        ),
         allowNull: false,
       },
-      image_fr: {
-        type: DataTypes.STRING,
-        allowNull: true,
+      image: {
+        type: DataTypes.STRING, // Path or URL to uploaded image
+        allowNull: false,
       },
-      image_bk: {
-        type: DataTypes.STRING,
-        allowNull: true,
+      verification_status: {
+        type: DataTypes.ENUM("Pending", "Verified", "Rejected"),
+        allowNull: false,
+        defaultValue: "Pending",
       },
     },
     { timestamps: true }
