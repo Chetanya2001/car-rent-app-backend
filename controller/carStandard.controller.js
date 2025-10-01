@@ -3,7 +3,7 @@ const { CarStandards } = require("../models");
 // POST: Create or update CarStandards for a car_id
 async function upsertCarStandards(req, res) {
   try {
-    const { car_id, mileage, transmission, seats, luggage, fuel, range } =
+    const { car_id, mileage, transmission, seats, luggage, fuel, car_range } =
       req.body;
 
     if (!car_id) {
@@ -21,7 +21,7 @@ async function upsertCarStandards(req, res) {
         seats,
         luggage,
         fuel,
-        range,
+        car_range,
       });
     } else {
       // Create new
