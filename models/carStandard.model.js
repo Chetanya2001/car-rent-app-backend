@@ -30,6 +30,10 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      range: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
     },
     { timestamps: true }
   );

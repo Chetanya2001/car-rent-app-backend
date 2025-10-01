@@ -8,4 +8,5 @@ router.use("/bookings", require("./booking.routes"));
 router.use("/car-features", require("./carFeatures.routes"));
 router.use("/car-details", require("./carDetails.routes"));
 router.use("/user-document", require("./userDocument.routes"));
+router.use("/car-standards", require("./carStandard.routes"));
 module.exports = router;
