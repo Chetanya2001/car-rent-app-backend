@@ -5,6 +5,7 @@ async function upsertCarStandards(req, res) {
   try {
     const { car_id, mileage, transmission, seats, luggage, fuel, car_range } =
       req.body;
+    console.log(req.body);
 
     if (!car_id) {
       return res.status(400).json({ message: "car_id is required" });
