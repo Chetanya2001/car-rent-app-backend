@@ -30,7 +30,7 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      range: {
+      car_range: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
