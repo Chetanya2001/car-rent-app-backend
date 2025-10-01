@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   upsertCarStandards,
   getCarStandards,
-} = require("../controllers/carStandard.controller");
+} = require("../controller/carStandard.controller");
 
 router.post("/", upsertCarStandards);
 
