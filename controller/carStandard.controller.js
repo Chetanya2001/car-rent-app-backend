@@ -1,4 +1,4 @@
-const { CarStandards } = require("../models/carStandard.model"); // Adjust path as needed
+const { CarStandards } = require("../models");
 
 // POST: Create or update CarStandards for a car_id
 async function upsertCarStandards(req, res) {
