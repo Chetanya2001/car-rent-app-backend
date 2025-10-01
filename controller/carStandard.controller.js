@@ -32,7 +32,7 @@ async function upsertCarStandards(req, res) {
         seats,
         luggage,
         fuel,
-        range,
+        car_range,
       });
     }
 
