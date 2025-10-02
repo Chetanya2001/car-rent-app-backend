@@ -71,27 +71,25 @@ exports.addRC = async (req, res) => {
       rc_number,
       rc_valid_till,
       city_of_registration,
-    } = req.body;
+      hand_type, // NEW
+      registration_type, // NEW
+    } = req.body; // Check if car_id is passed
 
-    // Check if car_id is passed
     if (!car_id) {
       return res.status(400).json({ message: "car_id is required" });
-    }
+    } // Check if both images are passed
 
-    // Check if both images are passed
     if (!req.files || !req.files.rc_image_front || !req.files.rc_image_back) {
       return res.status(400).json({ message: "Both RC images are required" });
-    }
+    } // Upload both images to S3
 
-    // Upload both images to S3
     const rcFrontUrl = await uploadToS3(req.files.rc_image_front[0]);
-    const rcBackUrl = await uploadToS3(req.files.rc_image_back[0]);
+    const rcBackUrl = await uploadToS3(req.files.rc_image_back[0]); // Find if document exists for this car
 
-    // Find if document exists for this car
     let carDoc = await CarDocument.findOne({ where: { car_id } });
 
     if (!carDoc) {
-      // Create new RC document
+      // Create new RC document with new fields
       carDoc = await CarDocument.create({
         car_id,
         rc_image_front: rcFrontUrl,
@@ -100,15 +98,19 @@ exports.addRC = async (req, res) => {
         rc_number,
         rc_valid_till,
         city_of_registration,
+        hand_type, // NEW
+        registration_type, // NEW
       });
     } else {
-      // Update existing RC document
+      // Update existing RC document with new fields
       carDoc.rc_image_front = rcFrontUrl;
       carDoc.rc_image_back = rcBackUrl;
       carDoc.owner_name = owner_name;
       carDoc.rc_number = rc_number;
       carDoc.rc_valid_till = rc_valid_till;
       carDoc.city_of_registration = city_of_registration;
+      carDoc.hand_type = hand_type; // NEW
+      carDoc.registration_type = registration_type; // NEW
       await carDoc.save();
     }
 
@@ -124,6 +126,7 @@ exports.addRC = async (req, res) => {
     });
   }
 };
+
 exports.updateRC = async (req, res) => {
   try {
     const {

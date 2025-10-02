@@ -53,13 +53,23 @@ module.exports = (sequelize) => {
       },
       city_of_registration: {
         type: DataTypes.STRING,
-        allowNull: true, // mandatory
+        allowNull: true,
       },
       rc_valid_till: {
         type: DataTypes.DATEONLY,
         allowNull: true,
-        defaultValue: null, // ✅ prevents MySQL from inserting '0000-00-00'
+        defaultValue: null,
+      }, // ------- NEW FIELDS BELOW -------
+      hand_type: {
+        type: DataTypes.ENUM("First", "Second"),
+        allowNull: false,
+        defaultValue: "First",
       },
+      registration_type: {
+        type: DataTypes.ENUM("Private", "Commercial"),
+        allowNull: false,
+        defaultValue: "Private",
+      }, // ------- END NEW FIELDS -------
       insurance_company: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -74,7 +84,7 @@ module.exports = (sequelize) => {
       insurance_valid_till: {
         type: DataTypes.DATEONLY,
         allowNull: true,
-        defaultValue: null, // ✅ prevents '0000-00-00'
+        defaultValue: null,
       },
     },
     { timestamps: true }
