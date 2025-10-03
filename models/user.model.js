@@ -14,6 +14,12 @@ module.exports = (sequelize) => {
       whatsapp_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
       whatsapp_code: { type: DataTypes.STRING },
       whatsapp_code_expires: { type: DataTypes.DATE },
+
+      // ✅ New field for Profile Picture
+      profile_pic: {
+        type: DataTypes.STRING, // store URL or file path
+        allowNull: true,
+      },
     },
     { timestamps: true }
   );

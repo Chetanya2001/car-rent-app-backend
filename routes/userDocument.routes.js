@@ -21,5 +21,11 @@ router.get(
   checkRole(["admin"]),
   UserDocuments.getUserDocumentsByUserId
 );
+router.post(
+  "/upload-profile-pic",
+  verifyToken,
+  upload.single("profile_pic"),
+  UserDocuments.uploadProfilePic
+);
 
 module.exports = router;

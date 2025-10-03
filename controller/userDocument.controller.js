@@ -78,3 +78,31 @@ exports.getUserDocumentsByUserId = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch user documents" });
   }
 };
+
+exports.uploadProfilePic = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Profile picture is required" });
+    }
+
+    // Upload image to S3
+    const imageUrl = await uploadToS3(req.file);
+
+    // Update user profile_pic
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.profile_pic = imageUrl;
+    await user.save();
+
+    return res.json({
+      message: "Profile picture uploaded successfully",
+      profile_pic: imageUrl,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Profile picture upload failed" });
+  }
+};
