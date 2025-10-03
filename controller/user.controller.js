@@ -171,14 +171,29 @@ exports.profile = async (req, res) => {
         "phone",
         "role",
         "is_verified",
+        "whatsapp_verified",
+        "profile_pic", // ✅ include profile picture
+        "createdAt",
+        "updatedAt",
       ],
     });
-    if (!user) return res.status(404).json({ message: "User not found" });
 
-    return res.json(user);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    return res.json({
+      success: true,
+      user,
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Profile fetch failed" });
+    console.error("Profile fetch failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Profile fetch failed",
+    });
   }
 };
 
