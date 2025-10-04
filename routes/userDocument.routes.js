@@ -18,7 +18,6 @@ router.post(
 router.get(
   "/get-document",
   verifyToken,
-  checkRole(["admin"]),
   UserDocuments.getUserDocumentsByUserId
 );
 router.post(

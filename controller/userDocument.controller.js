@@ -24,12 +24,26 @@ exports.uploadDocument = async (req, res) => {
     // Upload image to S3 and get URL
     const imageUrl = await uploadToS3(req.file);
 
-    const document = await UserDocuments.create({
-      user_id,
-      doc_type,
-      image: imageUrl,
-      verification_status: "Pending",
+    // Upsert logic
+    let document = await UserDocuments.findOne({
+      where: { user_id, doc_type },
     });
+
+    if (document) {
+      // Update existing record
+      await document.update({
+        image: imageUrl,
+        verification_status: "Pending",
+      });
+    } else {
+      // Create new record
+      document = await UserDocuments.create({
+        user_id,
+        doc_type,
+        image: imageUrl,
+        verification_status: "Pending",
+      });
+    }
 
     return res.status(201).json({
       message: "Document uploaded",
@@ -43,19 +57,13 @@ exports.uploadDocument = async (req, res) => {
 
 exports.getUserDocumentsByUserId = async (req, res) => {
   try {
-    // Check if authenticated user is admin
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
-    }
+    const userId = req.user.id; // get user id directly from token
 
-    const userId = req.body.userId;
     if (!userId) {
-      return res
-        .status(400)
-        .json({ message: "userId query parameter required" });
+      return res.status(400).json({ message: "User not authenticated" });
     }
 
-    // Optional: Verify user exists
+    // Optional: fetch user details if needed
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
