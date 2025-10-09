@@ -22,4 +22,6 @@ router.get(
 
 router.get("/verify-email", userController.verifyEmail);
 
+router.post("/support-mail", userController.sendSupportMessage);
+
 module.exports = router;

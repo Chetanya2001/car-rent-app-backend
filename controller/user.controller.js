@@ -217,3 +217,39 @@ exports.getAllUsers = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch users" });
   }
 };
+
+// ======================= SUPPORT CONTACT =======================
+exports.sendSupportMessage = async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    // Optional validation
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ message: "All fields required" });
+    }
+
+    // Construct email contents
+    await transporter.sendMail({
+      from: `"Zip Drive Support" <${process.env.EMAIL_USER}>`,
+      to: process.env.SUPPORT_RECEIVER || process.env.EMAIL_USER, // Where you want to receive support messages
+      subject: `[Support Request] ${subject}`,
+      replyTo: email,
+      html: `
+<div style="font-family: Arial, sans-serif;">
+ <h2>Support Request</h2>
+<p><strong>Name:</strong> ${name}</p>
+<p><strong>Email:</strong> ${email}</p>
+ <p><strong>Subject:</strong> ${subject}</p>
+ <p><strong>Message:</strong></p>
+ <div style="white-space:pre-line;">${message}</div> </div>
+ `,
+    });
+
+    return res.json({
+      message: "Support message sent. We'll get back to you soon.",
+    });
+  } catch (error) {
+    console.error("Support form error:", error);
+    return res.status(500).json({ message: "Failed to send support message" });
+  }
+};
