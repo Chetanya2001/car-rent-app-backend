@@ -668,7 +668,7 @@ exports.getCarsByHostId = async (req, res) => {
         },
         {
           model: CarPhoto,
-          as: "photos",
+          as: "photos", // ✅ alias must match model definition
           attributes: ["photo_url"],
         },
       ],
@@ -678,7 +678,7 @@ exports.getCarsByHostId = async (req, res) => {
       return res.status(404).json({ message: "No cars found for this host" });
     }
 
-    // format response
+    // ✅ Proper mapping using alias 'photos'
     const formattedCars = cars.map((car) => ({
       id: car.id,
       make: car.make,
@@ -704,7 +704,7 @@ exports.getCarsByHostId = async (req, res) => {
             trip_end_balance: car.CarDocument.trip_end_balance,
           }
         : null,
-      photos: car.CarPhotos?.map((p) => p.photo_url) || [],
+      photos: car.photos?.map((p) => p.photo_url) || [], // ✅ use alias name
     }));
 
     res.status(200).json({ cars: formattedCars });
