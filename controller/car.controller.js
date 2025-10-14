@@ -498,6 +498,7 @@ exports.getCars = async (req, res) => {
     });
 
     const formattedCars = cars.map((car) => ({
+      id: car.id,
       name: car.model,
       brand: car.make,
       year: car.year,
