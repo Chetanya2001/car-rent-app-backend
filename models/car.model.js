@@ -57,7 +57,7 @@ module.exports = (sequelize) => {
 
   Car.associate = (models) => {
     Car.belongsTo(models.User, { as: "host", foreignKey: "host_id" });
-    Car.hasOne(models.CarDocument, { foreignKey: "car_id" });
+    Car.hasOne(models.CarDocument, { foreignKey: "car_id", as: "documents" });
     Car.hasMany(models.Booking, { foreignKey: "car_id" });
     Car.hasOne(models.CarLocation, { foreignKey: "car_id" });
     Car.hasMany(models.CarPhoto, { foreignKey: "car_id", as: "photos" });
