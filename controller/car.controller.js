@@ -489,16 +489,21 @@ exports.getCars = async (req, res) => {
           attributes: ["photo_url"],
           limit: 1,
         },
+        {
+          model: CarDocument,
+          as: "documents", // ✅ ensure alias matches association name
+          attributes: ["city_of_registration"],
+        },
       ],
     });
 
     const formattedCars = cars.map((car) => ({
-      id: car.id,
       name: car.model,
       brand: car.make,
       year: car.year,
       price: parseFloat(car.price_per_hour),
-      image: car.photos?.length > 0 ? car.photos[0].photo_url : null, // ✅ use alias
+      image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
+      location: car.documents?.city_of_registration || "Not specified", // ✅ new field
     }));
 
     res.json(formattedCars);
