@@ -158,22 +158,19 @@ exports.getHostBookings = async (req, res) => {
       .json({ message: "Error fetching host bookings", error: error.message });
   }
 };
-
-// ========== Guest: Get My Bookings ==========
 exports.getGuestBookings = async (req, res) => {
   try {
-    const guest_id = req.user.id; // guest user ID from JWT or session
+    const guest_id = req.user.id;
 
     const bookings = await Booking.findAll({
       where: { guest_id },
       include: [
-        {
-          model: Car,
-          include: [{ model: Users, as: "host" }],
-        },
+        { model: Car }, // no alias here
+        { model: Users, as: "guest" },
       ],
       order: [["start_datetime", "DESC"]],
     });
+
     res.status(200).json(bookings);
   } catch (error) {
     res
