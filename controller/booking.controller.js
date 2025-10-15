@@ -1,4 +1,5 @@
-const { Car, CarLocation, Booking, Users } = require("../models");
+// ✅ Correct
+const { Car, CarLocation, Booking, User } = require("../models");
 
 // ========== SearchCars ==========
 exports.SearchCars = async (req, res) => {
@@ -115,7 +116,7 @@ exports.getAllBookingsAdmin = async (req, res) => {
       include: [
         {
           model: Car,
-          include: [{ model: Users, as: "host" }], // assuming host user association
+          include: [{ model: User, as: "host" }], // assuming host user association
         },
         {
           model: Users,
@@ -145,7 +146,7 @@ exports.getHostBookings = async (req, res) => {
           where: { host_id }, // filter cars by this host
         },
         {
-          model: Users,
+          model: User,
           as: "guest",
         },
       ],
@@ -164,14 +165,31 @@ exports.getGuestBookings = async (req, res) => {
 
     const bookings = await Booking.findAll({
       where: { guest_id },
-      include: [{ model: Car }, { model: Users, as: "guest" }],
+      include: [
+        {
+          model: Car,
+          include: [
+            {
+              model: User,
+              as: "host", // matches Car.associate
+              attributes: ["id", "first_name", "last_name", "email"],
+            },
+          ],
+        },
+        {
+          model: User,
+          as: "guest", // matches Booking.associate
+          attributes: ["id", "first_name", "last_name", "email"],
+        },
+      ],
       order: [["start_datetime", "DESC"]],
     });
 
     res.status(200).json(bookings);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching guest bookings", error: error.message });
+    res.status(500).json({
+      message: "Error fetching guest bookings",
+      error: error.message,
+    });
   }
 };
