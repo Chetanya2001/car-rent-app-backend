@@ -107,3 +107,77 @@ exports.bookCar = async (req, res) => {
     });
   }
 };
+// ========== Admin: Get All Bookings ==========
+exports.getAllBookingsAdmin = async (req, res) => {
+  try {
+    // Only allow admins - authorization middleware should ensure this
+    const bookings = await Booking.findAll({
+      include: [
+        {
+          model: Car,
+          include: [{ model: Users, as: "host" }], // assuming host user association
+        },
+        {
+          model: Users,
+          as: "guest",
+        },
+      ],
+      order: [["start_datetime", "DESC"]],
+    });
+    res.status(200).json(bookings);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching all bookings", error: error.message });
+  }
+};
+
+// ========== Host: Get My Cars' Bookings ==========
+exports.getHostBookings = async (req, res) => {
+  try {
+    const host_id = req.user.id; // Assuming this is host's user ID
+
+    // Find bookings for cars owned by this host
+    const bookings = await Booking.findAll({
+      include: [
+        {
+          model: Car,
+          where: { host_id }, // filter cars by this host
+        },
+        {
+          model: Users,
+          as: "guest",
+        },
+      ],
+      order: [["start_datetime", "DESC"]],
+    });
+    res.status(200).json(bookings);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching host bookings", error: error.message });
+  }
+};
+
+// ========== Guest: Get My Bookings ==========
+exports.getGuestBookings = async (req, res) => {
+  try {
+    const guest_id = req.user.id; // guest user ID from JWT or session
+
+    const bookings = await Booking.findAll({
+      where: { guest_id },
+      include: [
+        {
+          model: Car,
+          include: [{ model: Users, as: "host" }],
+        },
+      ],
+      order: [["start_datetime", "DESC"]],
+    });
+    res.status(200).json(bookings);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching guest bookings", error: error.message });
+  }
+};
