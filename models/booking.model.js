@@ -4,16 +4,50 @@ module.exports = (sequelize) => {
   const Booking = sequelize.define(
     "Booking",
     {
-      start_datetime: DataTypes.DATE,
-      end_datetime: DataTypes.DATE,
-      pickup_address: DataTypes.TEXT,
-      pickup_lat: DataTypes.DECIMAL(10, 6),
-      pickup_long: DataTypes.DECIMAL(10, 6),
-      drop_address: DataTypes.TEXT,
-      drop_lat: DataTypes.DECIMAL(10, 6),
-      drop_long: DataTypes.DECIMAL(10, 6),
+      start_datetime: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      end_datetime: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      pickup_address: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      pickup_lat: {
+        type: DataTypes.DECIMAL(10, 6),
+        allowNull: false,
+      },
+      pickup_long: {
+        type: DataTypes.DECIMAL(10, 6),
+        allowNull: false,
+      },
+      drop_address: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      drop_lat: {
+        type: DataTypes.DECIMAL(10, 6),
+        allowNull: false,
+      },
+      drop_long: {
+        type: DataTypes.DECIMAL(10, 6),
+        allowNull: false,
+      },
+      insure_amount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      driver_amount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
       status: {
         type: DataTypes.ENUM("initiated", "booked", "cancelled", "completed"),
+        allowNull: false,
+        defaultValue: "initiated",
       },
     },
     { timestamps: true }

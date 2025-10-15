@@ -42,6 +42,7 @@ exports.ViewaCar = async (req, res) => {
 };
 
 // ========== BookaCar ==========
+// ========== BookaCar ==========
 exports.bookCar = async (req, res) => {
   try {
     // Always take guest_id from JWT token
@@ -57,11 +58,25 @@ exports.bookCar = async (req, res) => {
       drop_address,
       drop_lat,
       drop_long,
+      insure_amount, // <- NEW FIELD
+      driver_amount, // <- NEW FIELD
     } = req.body;
 
-    if (!car_id || !start_datetime || !end_datetime) {
+    // Validate required fields
+    if (
+      !car_id ||
+      !start_datetime ||
+      !end_datetime ||
+      !pickup_address ||
+      !pickup_lat ||
+      !pickup_long ||
+      !drop_address ||
+      !drop_lat ||
+      !drop_long
+    ) {
       return res.status(400).json({
-        message: "car_id, start_datetime, and end_datetime are required",
+        message:
+          "All of car_id, start_datetime, end_datetime, pickup and drop details are required",
       });
     }
 
@@ -76,6 +91,8 @@ exports.bookCar = async (req, res) => {
       drop_address,
       drop_lat,
       drop_long,
+      insure_amount: insure_amount || 0,
+      driver_amount: driver_amount || 0,
       status: "initiated", // default status
     });
 
