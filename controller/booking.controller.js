@@ -159,6 +159,7 @@ exports.getHostBookings = async (req, res) => {
       .json({ message: "Error fetching host bookings", error: error.message });
   }
 };
+
 exports.getGuestBookings = async (req, res) => {
   try {
     const guest_id = req.user.id;
@@ -171,19 +172,19 @@ exports.getGuestBookings = async (req, res) => {
           include: [
             {
               model: User,
-              as: "host", // Host details
+              as: "host",
               attributes: ["id", "first_name", "last_name", "email"],
             },
             {
-              model: sequelize.models.CarPhoto, // ✅ include photos
+              model: CarPhoto,
               as: "photos",
-              attributes: ["id", "photo_url"], // only send what’s needed
+              attributes: ["id", "photo_url"],
             },
           ],
         },
         {
           model: User,
-          as: "guest", // Guest details
+          as: "guest",
           attributes: ["id", "first_name", "last_name", "email"],
         },
       ],
@@ -192,6 +193,7 @@ exports.getGuestBookings = async (req, res) => {
 
     res.status(200).json(bookings);
   } catch (error) {
+    console.error("Error fetching guest bookings:", error);
     res.status(500).json({
       message: "Error fetching guest bookings",
       error: error.message,
