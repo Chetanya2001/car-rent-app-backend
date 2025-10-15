@@ -164,10 +164,7 @@ exports.getGuestBookings = async (req, res) => {
 
     const bookings = await Booking.findAll({
       where: { guest_id },
-      include: [
-        { model: Car }, // no alias here
-        { model: Users, as: "guest" },
-      ],
+      include: [{ model: Car }, { model: Users, as: "guest" }],
       order: [["start_datetime", "DESC"]],
     });
 
