@@ -657,7 +657,6 @@ exports.getCarsByHostId = async (req, res) => {
       include: [
         {
           model: CarDocument,
-          as: "documents", // ✅ alias must match your model definition
           attributes: [
             "car_id",
             "rc_image_front",
