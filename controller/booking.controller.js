@@ -1,5 +1,5 @@
 // ✅ Correct
-const { Car, CarLocation, Booking, User } = require("../models");
+const { Car, CarLocation, Booking, User, CarPhoto } = require("../models");
 
 // ========== SearchCars ==========
 exports.SearchCars = async (req, res) => {
@@ -171,14 +171,19 @@ exports.getGuestBookings = async (req, res) => {
           include: [
             {
               model: User,
-              as: "host", // matches Car.associate
+              as: "host", // Host details
               attributes: ["id", "first_name", "last_name", "email"],
+            },
+            {
+              model: sequelize.models.CarPhoto, // ✅ include photos
+              as: "photos",
+              attributes: ["id", "photo_url"], // only send what’s needed
             },
           ],
         },
         {
           model: User,
-          as: "guest", // matches Booking.associate
+          as: "guest", // Guest details
           attributes: ["id", "first_name", "last_name", "email"],
         },
       ],
