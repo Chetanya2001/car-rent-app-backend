@@ -651,11 +651,13 @@ exports.getCarsByHostId = async (req, res) => {
       return res.status(400).json({ message: "host_id is required" });
     }
 
+    // ✅ Proper include with aliases matching your model associations
     const cars = await Car.findAll({
       where: { host_id },
       include: [
         {
           model: CarDocument,
+          as: "documents", // ✅ alias must match your model definition
           attributes: [
             "car_id",
             "rc_image_front",
@@ -678,13 +680,14 @@ exports.getCarsByHostId = async (req, res) => {
           attributes: ["photo_url"],
         },
       ],
+      order: [["createdAt", "DESC"]], // optional sorting
     });
 
     if (!cars || cars.length === 0) {
       return res.status(404).json({ message: "No cars found for this host" });
     }
 
-    // ✅ Proper mapping using alias 'photos'
+    // ✅ Proper mapping with alias-safe fields
     const formattedCars = cars.map((car) => ({
       id: car.id,
       make: car.make,
@@ -694,23 +697,23 @@ exports.getCarsByHostId = async (req, res) => {
       kms_driven: car.kms_driven,
       available_from: car.available_from,
       available_till: car.available_till,
-      documents: car.CarDocument
+      documents: car.documents
         ? {
-            rc_image_front: car.CarDocument.rc_image_front,
-            rc_image_back: car.CarDocument.rc_image_back,
-            owner_name: car.CarDocument.owner_name,
-            insurance_company: car.CarDocument.insurance_company,
-            insurance_idv_value: car.CarDocument.insurance_idv_value,
-            insurance_image: car.CarDocument.insurance_image,
-            rc_number: car.CarDocument.rc_number,
-            rc_valid_till: car.CarDocument.rc_valid_till,
-            city_of_registration: car.CarDocument.city_of_registration,
-            fastag_image: car.CarDocument.fastag_image,
-            trip_start_balance: car.CarDocument.trip_start_balance,
-            trip_end_balance: car.CarDocument.trip_end_balance,
+            rc_image_front: car.documents.rc_image_front,
+            rc_image_back: car.documents.rc_image_back,
+            owner_name: car.documents.owner_name,
+            insurance_company: car.documents.insurance_company,
+            insurance_idv_value: car.documents.insurance_idv_value,
+            insurance_image: car.documents.insurance_image,
+            rc_number: car.documents.rc_number,
+            rc_valid_till: car.documents.rc_valid_till,
+            city_of_registration: car.documents.city_of_registration,
+            fastag_image: car.documents.fastag_image,
+            trip_start_balance: car.documents.trip_start_balance,
+            trip_end_balance: car.documents.trip_end_balance,
           }
         : null,
-      photos: car.photos?.map((p) => p.photo_url) || [], // ✅ use alias name
+      photos: car.photos?.map((p) => p.photo_url) || [], // ✅ alias-safe photos
     }));
 
     res.status(200).json({ cars: formattedCars });
