@@ -143,15 +143,18 @@ exports.getHostBookings = async (req, res) => {
       include: [
         {
           model: Car,
-          where: { host_id }, // filter cars by this host
+          where: { host_id }, // Only cars owned by current host
+          required: true,
         },
         {
           model: User,
-          as: "guest",
+          as: "guest", // This must match the "as" in your Booking.associate
+          attributes: ["id", "first_name", "last_name", "email"],
         },
       ],
       order: [["start_datetime", "DESC"]],
     });
+
     res.status(200).json(bookings);
   } catch (error) {
     res
