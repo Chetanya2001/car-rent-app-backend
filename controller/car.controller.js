@@ -478,7 +478,6 @@ exports.deleteCarLocation = async (req, res) => {
       .json({ message: "Error deleting car location", error: error.message });
   }
 };
-const { Car, CarPhoto, CarDocument } = require("../models");
 
 exports.getCars = async (req, res) => {
   try {
@@ -492,13 +491,12 @@ exports.getCars = async (req, res) => {
         },
         {
           model: CarDocument,
-          attributes: ["city_of_registration"],
           required: false, // include cars even if no CarDocument exists
+          // No attributes filter, send full CarDocument
         },
       ],
     });
 
-    // Log the raw result for debugging (remove in production)
     console.log(
       "Cars fetched with CarDocument:",
       JSON.stringify(cars, null, 2)
@@ -511,7 +509,7 @@ exports.getCars = async (req, res) => {
       year: car.year,
       price: parseFloat(car.price_per_hour),
       image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.CarDocument?.city_of_registration || "Not specified",
+      car_document: car.CarDocument || null, // full CarDocument included
     }));
 
     res.json(formattedCars);
