@@ -507,7 +507,7 @@ exports.getCars = async (req, res) => {
       year: car.year,
       price: parseFloat(car.price_per_hour) || 0,
       image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.document?.city_of_registration || "Not specified",
+      location: car.CarDocument?.city_of_registration || "Not specified",
     }));
 
     res.json(formattedCars);
