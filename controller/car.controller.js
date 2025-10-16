@@ -491,6 +491,7 @@ exports.getCars = async (req, res) => {
         },
         {
           model: CarDocument,
+          as: "document",
           attributes: ["city_of_registration"],
           // do NOT use 'as' here since it's not in model associations
           // required: false is default and safe here
@@ -498,10 +499,11 @@ exports.getCars = async (req, res) => {
       ],
     });
 
-    // Log full raw response for debugging
-    console.log("Cars with CarDocument:", JSON.stringify(cars, null, 2));
+    console.log(
+      "CarDocument field per car:",
+      cars.map((c) => c.CarDocument)
+    );
 
-    // Map & format API response
     const formattedCars = cars.map((car) => ({
       id: car.id,
       name: car.model,
@@ -509,8 +511,8 @@ exports.getCars = async (req, res) => {
       year: car.year,
       price: parseFloat(car.price_per_hour),
       image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.CarDocument
-        ? car.CarDocument.city_of_registration
+      location: car.document
+        ? car.document.city_of_registration
         : "Not specified",
     }));
 

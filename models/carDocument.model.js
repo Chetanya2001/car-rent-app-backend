@@ -91,7 +91,7 @@ module.exports = (sequelize) => {
   );
 
   CarDocument.associate = (models) => {
-    CarDocument.belongsTo(models.Car, { foreignKey: "car_id" });
+    CarDocument.belongsTo(models.Car, { foreignKey: "car_id", as: "car" });
   };
 
   return CarDocument;
