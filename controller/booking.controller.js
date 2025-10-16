@@ -2,10 +2,10 @@
 const { Car, CarLocation, Booking, User, CarPhoto } = require("../models");
 const nodemailer = require("nodemailer");
 
-// ✅ Define transporter globally (before exports)
+// Global transporter config
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST, // e.g. smtp.hostinger.com
-  port: process.env.EMAIL_PORT, // 465 or 587
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
   secure: process.env.EMAIL_SECURE === "true",
   auth: {
     user: process.env.EMAIL_USER,
@@ -74,7 +74,7 @@ exports.bookCar = async (req, res) => {
       driver_amount,
     } = req.body;
 
-    // ✅ Step 1: Validate required fields
+    // Validate mandatory fields
     if (
       !car_id ||
       !start_datetime ||
@@ -92,7 +92,7 @@ exports.bookCar = async (req, res) => {
       });
     }
 
-    // ✅ Step 2: Fetch guest, car, host
+    // Fetch guest, car, host - validating existence
     const guest = await User.findByPk(guest_id);
     if (!guest) return res.status(404).json({ message: "Guest not found" });
 
@@ -102,7 +102,7 @@ exports.bookCar = async (req, res) => {
     const host = await User.findByPk(car.host_id);
     if (!host) return res.status(404).json({ message: "Host not found" });
 
-    // ✅ Step 3: Prepare email contents
+    // Prepare email contents
     const guestMailOptions = {
       from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
       to: guest.email,
@@ -133,15 +133,13 @@ exports.bookCar = async (req, res) => {
       `,
     };
 
-    // ✅ Step 4: Send emails first
-    console.log("📨 Sending booking emails...");
+    // Send emails first - wait for both to succeed
     await Promise.all([
       transporter.sendMail(guestMailOptions),
       transporter.sendMail(hostMailOptions),
     ]);
-    console.log("✅ Both emails sent successfully.");
 
-    // ✅ Step 5: Create booking record only after successful email delivery
+    // After successful emails, create booking record
     const booking = await Booking.create({
       guest_id,
       car_id,
@@ -158,20 +156,19 @@ exports.bookCar = async (req, res) => {
       status: "initiated",
     });
 
-    // ✅ Step 6: Send response
-    res.status(201).json({
+    // Respond with success and booking data
+    return res.status(201).json({
       message: "Booking created successfully after email confirmation",
       booking,
     });
   } catch (error) {
-    console.error("❌ Error in bookCar:", error);
-    res.status(500).json({
+    console.error("Error in bookCar:", error);
+    return res.status(500).json({
       message: "Error creating booking",
       error: error.message,
     });
   }
 };
-
 // ========== Admin: Get All Bookings ==========
 exports.getAllBookingsAdmin = async (req, res) => {
   try {
