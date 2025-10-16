@@ -74,6 +74,7 @@ exports.bookCar = async (req, res) => {
       driver_amount,
     } = req.body;
 
+    // ✅ Step 1: Validate required fields
     if (
       !car_id ||
       !start_datetime ||
@@ -91,7 +92,56 @@ exports.bookCar = async (req, res) => {
       });
     }
 
-    // Create booking
+    // ✅ Step 2: Fetch guest, car, host
+    const guest = await User.findByPk(guest_id);
+    if (!guest) return res.status(404).json({ message: "Guest not found" });
+
+    const car = await Car.findByPk(car_id);
+    if (!car) return res.status(404).json({ message: "Car not found" });
+
+    const host = await User.findByPk(car.host_id);
+    if (!host) return res.status(404).json({ message: "Host not found" });
+
+    // ✅ Step 3: Prepare email contents
+    const guestMailOptions = {
+      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
+      to: guest.email,
+      subject: `Booking initiated for car (ID: ${car_id})`,
+      html: `
+        <h3>Dear ${guest.first_name},</h3>
+        <p>Your booking for the car (ID: ${car_id}) is being processed.</p>
+        <p><b>Pickup:</b> ${pickup_address}</p>
+        <p><b>Drop:</b> ${drop_address}</p>
+        <p><b>From:</b> ${start_datetime}</p>
+        <p><b>To:</b> ${end_datetime}</p>
+        <p>Thank you for choosing Zip Drive!</p>
+      `,
+    };
+
+    const hostMailOptions = {
+      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
+      to: host.email,
+      subject: `Car booking alert: Car ID ${car_id}`,
+      html: `
+        <h3>Dear ${host.first_name},</h3>
+        <p>Your car (ID: ${car_id}) has been booked by ${guest.first_name} ${guest.last_name}.</p>
+        <p><b>Pickup:</b> ${pickup_address}</p>
+        <p><b>Drop:</b> ${drop_address}</p>
+        <p><b>From:</b> ${start_datetime}</p>
+        <p><b>To:</b> ${end_datetime}</p>
+        <p>Please prepare the car for the rental period.</p>
+      `,
+    };
+
+    // ✅ Step 4: Send emails first
+    console.log("📨 Sending booking emails...");
+    await Promise.all([
+      transporter.sendMail(guestMailOptions),
+      transporter.sendMail(hostMailOptions),
+    ]);
+    console.log("✅ Both emails sent successfully.");
+
+    // ✅ Step 5: Create booking record only after successful email delivery
     const booking = await Booking.create({
       guest_id,
       car_id,
@@ -108,59 +158,13 @@ exports.bookCar = async (req, res) => {
       status: "initiated",
     });
 
-    // Fetch guest info
-    const guest = await User.findByPk(guest_id);
-
-    const car = await Car.findByPk(car_id);
-    if (!car) {
-      return res.status(404).json({ message: "Car not found" });
-    }
-    const host = await User.findByPk(car.host_id);
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-
-    // Email content for guest
-    const guestMailOptions = {
-      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
-      to: guest.email,
-      subject: `Your booking for car ${car_id} is confirmed`,
-      html: `
-        <h3>Dear ${guest.first_name},</h3>
-        <p>Your booking for the car (ID: ${car_id}) has been successfully initiated.</p>
-        <p>Pickup: ${pickup_address}</p>
-        <p>Drop: ${drop_address}</p>
-        <p>From: ${start_datetime} To: ${end_datetime}</p>
-        <p>Thank you for choosing Zip Drive!</p>
-      `,
-    };
-
-    // Email content for host
-    const hostMailOptions = {
-      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
-      to: host.email,
-      subject: `Your car (ID: ${car_id}) has been booked`,
-      html: `
-        <h3>Dear ${host.first_name},</h3>
-        <p>Your car (ID: ${car_id}) has been booked by ${guest.first_name} ${guest.last_name}.</p>
-        <p>Pickup: ${pickup_address}</p>
-        <p>Drop: ${drop_address}</p>
-        <p>From: ${start_datetime} To: ${end_datetime}</p>
-        <p>Please prepare the car for the rental period.</p>
-      `,
-    };
-    console.log(transporter);
-    // Send emails (can be done in parallel)
-    await Promise.all([
-      transporter.sendMail(guestMailOptions),
-      transporter.sendMail(hostMailOptions),
-    ]);
-
+    // ✅ Step 6: Send response
     res.status(201).json({
-      message: "Car booked successfully",
+      message: "Booking created successfully after email confirmation",
       booking,
     });
   } catch (error) {
+    console.error("❌ Error in bookCar:", error);
     res.status(500).json({
       message: "Error creating booking",
       error: error.message,
