@@ -478,19 +478,18 @@ exports.deleteCarLocation = async (req, res) => {
       .json({ message: "Error deleting car location", error: error.message });
   }
 };
-
 exports.getCars = async (req, res) => {
   try {
     const cars = await Car.findAll({
       include: [
         {
           model: CarPhoto,
-          as: "photos", // ✅ must match association alias
+          as: "photos", // has alias, so keep it
           attributes: ["photo_url"],
           limit: 1,
         },
         {
-          model: CarDocument,
+          model: CarDocument, // no alias here
           attributes: ["city_of_registration"],
         },
       ],
@@ -503,7 +502,7 @@ exports.getCars = async (req, res) => {
       year: car.year,
       price: parseFloat(car.price_per_hour),
       image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.documents?.city_of_registration || "Not specified", // ✅ new field
+      location: car.CarDocument?.city_of_registration || "Not specified", // Use CarDocument property here
     }));
 
     res.json(formattedCars);
