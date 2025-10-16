@@ -493,7 +493,7 @@ exports.getCars = async (req, res) => {
         {
           model: CarDocument,
           attributes: ["city_of_registration"],
-          required: false, // include cars even if no CarDocument exists
+          required: true,
         },
       ],
     });
