@@ -491,7 +491,6 @@ exports.getCars = async (req, res) => {
         },
         {
           model: CarDocument,
-          as: "document", // MUST match Car.hasOne alias
           attributes: ["city_of_registration"],
         },
       ],
