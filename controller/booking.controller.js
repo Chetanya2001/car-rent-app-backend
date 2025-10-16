@@ -99,7 +99,6 @@ exports.bookCar = async (req, res) => {
     // Fetch guest info
     const guest = await User.findByPk(guest_id);
 
-    // Fetch car and host info (assuming Car has a host_id)
     const car = await Car.findByPk(car_id);
     if (!car) {
       return res.status(404).json({ message: "Car not found" });
