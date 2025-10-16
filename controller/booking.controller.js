@@ -149,7 +149,7 @@ exports.bookCar = async (req, res) => {
         <p>Please prepare the car for the rental period.</p>
       `,
     };
-
+    console.log(transporter);
     // Send emails (can be done in parallel)
     await Promise.all([
       transporter.sendMail(guestMailOptions),
