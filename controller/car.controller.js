@@ -491,29 +491,23 @@ exports.getCars = async (req, res) => {
         },
         {
           model: CarDocument,
-          as: "document",
+          as: "document", // MUST match Car.hasOne alias
           attributes: ["city_of_registration"],
-          // do NOT use 'as' here since it's not in model associations
-          // required: false is default and safe here
         },
       ],
     });
 
-    console.log(
-      "CarDocument field per car:",
-      cars.map((c) => c.CarDocument)
-    );
+    // Debug: check what Sequelize returned
+    console.log(JSON.stringify(cars, null, 2));
 
     const formattedCars = cars.map((car) => ({
       id: car.id,
       name: car.model,
       brand: car.make,
       year: car.year,
-      price: parseFloat(car.price_per_hour),
+      price: parseFloat(car.price_per_hour) || 0,
       image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.document
-        ? car.document.city_of_registration
-        : "Not specified",
+      location: car.document?.city_of_registration || "Not specified",
     }));
 
     res.json(formattedCars);
@@ -522,7 +516,6 @@ exports.getCars = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 // Update Car Availability & Rent
 exports.updateAvailability = async (req, res) => {
   try {
