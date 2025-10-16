@@ -126,6 +126,6 @@ router.post("/search", carController.searchCars);
 
 router.post("/my-host-cars", verifyToken, carController.getCarsByHostId);
 
-router.post("/get-city", carController.getCityOfRegistration);
+router.post("/get-city", verifyToken, carController.getCityOfRegistration);
 
 module.exports = router;
