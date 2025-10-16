@@ -1,6 +1,18 @@
 // ✅ Correct
 const { Car, CarLocation, Booking, User, CarPhoto } = require("../models");
 
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST, // e.g. smtp.hostinger.com
+  port: process.env.EMAIL_PORT, // 465 or 587
+  secure: process.env.EMAIL_SECURE === "true", // true if using 465
+  auth: {
+    user: process.env.EMAIL_USER, // your email user, example: support@zipdrive.in
+    pass: process.env.EMAIL_PASS, // your email password
+  },
+});
+
 // ========== SearchCars ==========
 exports.SearchCars = async (req, res) => {
   try {
