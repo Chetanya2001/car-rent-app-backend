@@ -528,6 +528,40 @@ exports.getCars = async (req, res) => {
   }
 };
 
+exports.getCityOfRegistration = async (req, res) => {
+  try {
+    const { car_id } = req.body;
+
+    if (!car_id) {
+      return res
+        .status(400)
+        .json({ message: "car_id is required in the request body" });
+    }
+
+    // Find the CarDocument by car_id
+    const carDocument = await CarDocument.findOne({
+      where: { car_id },
+      attributes: ["city_of_registration"],
+    });
+
+    if (!carDocument) {
+      return res
+        .status(404)
+        .json({ message: "Car document not found for this car_id" });
+    }
+
+    // Respond with the city_of_registration as location
+    return res
+      .status(200)
+      .json({ location: carDocument.city_of_registration || "Not specified" });
+  } catch (error) {
+    console.error("Error fetching city_of_registration:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
 // Update Car Availability & Rent
 exports.updateAvailability = async (req, res) => {
   try {
