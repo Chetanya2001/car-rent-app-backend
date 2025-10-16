@@ -138,17 +138,24 @@ exports.getHostBookings = async (req, res) => {
   try {
     const host_id = req.user.id; // Assuming this is host's user ID
 
-    // Find bookings for cars owned by this host
+    // Find bookings for cars owned by this host including photos
     const bookings = await Booking.findAll({
       include: [
         {
           model: Car,
           where: { host_id }, // Only cars owned by current host
           required: true,
+          include: [
+            {
+              model: CarPhoto,
+              as: "photos",
+              attributes: ["id", "photo_url"],
+            },
+          ],
         },
         {
           model: User,
-          as: "guest", // This must match the "as" in your Booking.associate
+          as: "guest", // Match association alias
           attributes: ["id", "first_name", "last_name", "email"],
         },
       ],
