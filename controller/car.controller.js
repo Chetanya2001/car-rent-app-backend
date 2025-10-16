@@ -481,33 +481,45 @@ exports.deleteCarLocation = async (req, res) => {
 
 exports.getCars = async (req, res) => {
   try {
+    // Step 1: Fetch all cars
     const cars = await Car.findAll({
-      include: [
-        {
-          model: CarPhoto,
-          as: "photos",
-          attributes: ["photo_url"],
-          limit: 1,
-        },
-        {
-          model: CarDocument,
-          attributes: ["city_of_registration"],
-        },
-      ],
+      attributes: ["id", "make", "model", "year", "price_per_hour"],
+      raw: true,
     });
 
-    // Debug: check what Sequelize returned
-    console.log(JSON.stringify(cars, null, 2));
+    // Step 2: Collect all car IDs
+    const carIds = cars.map((car) => car.id);
 
-    const formattedCars = cars.map((car) => ({
-      id: car.id,
-      name: car.model,
-      brand: car.make,
-      year: car.year,
-      price: parseFloat(car.price_per_hour) || 0,
-      image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.CarDocument?.city_of_registration || "Not specified",
-    }));
+    // Step 3: Fetch photos for all cars (first photo per car)
+    const photos = await CarPhoto.findAll({
+      where: { car_id: carIds },
+      attributes: ["car_id", "photo_url"],
+      order: [["id", "ASC"]],
+      raw: true,
+    });
+
+    // Step 4: Fetch documents for all cars
+    const documents = await CarDocument.findAll({
+      where: { car_id: carIds },
+      attributes: ["car_id", "city_of_registration"],
+      raw: true,
+    });
+
+    // Step 5: Combine data
+    const formattedCars = cars.map((car) => {
+      const photo = photos.find((p) => p.car_id === car.id);
+      const doc = documents.find((d) => d.car_id === car.id);
+
+      return {
+        id: car.id,
+        name: car.model,
+        brand: car.make,
+        year: car.year,
+        price: parseFloat(car.price_per_hour) || 0,
+        image: photo ? photo.photo_url : null,
+        location: doc ? doc.city_of_registration : "Not specified",
+      };
+    });
 
     res.json(formattedCars);
   } catch (error) {
@@ -515,6 +527,7 @@ exports.getCars = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 // Update Car Availability & Rent
 exports.updateAvailability = async (req, res) => {
   try {
