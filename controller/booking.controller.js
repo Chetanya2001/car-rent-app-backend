@@ -43,10 +43,9 @@ exports.ViewaCar = async (req, res) => {
 };
 
 // ========== BookaCar ==========
-// ========== BookaCar ==========
+
 exports.bookCar = async (req, res) => {
   try {
-    // Always take guest_id from JWT token
     const guest_id = req.user.id;
 
     const {
@@ -59,11 +58,10 @@ exports.bookCar = async (req, res) => {
       drop_address,
       drop_lat,
       drop_long,
-      insure_amount, // <- NEW FIELD
-      driver_amount, // <- NEW FIELD
+      insure_amount,
+      driver_amount,
     } = req.body;
 
-    // Validate required fields
     if (
       !car_id ||
       !start_datetime ||
@@ -81,6 +79,7 @@ exports.bookCar = async (req, res) => {
       });
     }
 
+    // Create booking
     const booking = await Booking.create({
       guest_id,
       car_id,
@@ -94,8 +93,57 @@ exports.bookCar = async (req, res) => {
       drop_long,
       insure_amount: insure_amount || 0,
       driver_amount: driver_amount || 0,
-      status: "initiated", // default status
+      status: "initiated",
     });
+
+    // Fetch guest info
+    const guest = await User.findByPk(guest_id);
+
+    // Fetch car and host info (assuming Car has a host_id)
+    const car = await Car.findByPk(car_id);
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+    const host = await User.findByPk(car.host_id);
+    if (!host) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    // Email content for guest
+    const guestMailOptions = {
+      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
+      to: guest.email,
+      subject: `Your booking for car ${car_id} is confirmed`,
+      html: `
+        <h3>Dear ${guest.first_name},</h3>
+        <p>Your booking for the car (ID: ${car_id}) has been successfully initiated.</p>
+        <p>Pickup: ${pickup_address}</p>
+        <p>Drop: ${drop_address}</p>
+        <p>From: ${start_datetime} To: ${end_datetime}</p>
+        <p>Thank you for choosing Zip Drive!</p>
+      `,
+    };
+
+    // Email content for host
+    const hostMailOptions = {
+      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
+      to: host.email,
+      subject: `Your car (ID: ${car_id}) has been booked`,
+      html: `
+        <h3>Dear ${host.first_name},</h3>
+        <p>Your car (ID: ${car_id}) has been booked by ${guest.first_name} ${guest.last_name}.</p>
+        <p>Pickup: ${pickup_address}</p>
+        <p>Drop: ${drop_address}</p>
+        <p>From: ${start_datetime} To: ${end_datetime}</p>
+        <p>Please prepare the car for the rental period.</p>
+      `,
+    };
+
+    // Send emails (can be done in parallel)
+    await Promise.all([
+      transporter.sendMail(guestMailOptions),
+      transporter.sendMail(hostMailOptions),
+    ]);
 
     res.status(201).json({
       message: "Car booked successfully",
@@ -108,6 +156,7 @@ exports.bookCar = async (req, res) => {
     });
   }
 };
+
 // ========== Admin: Get All Bookings ==========
 exports.getAllBookingsAdmin = async (req, res) => {
   try {
@@ -119,7 +168,7 @@ exports.getAllBookingsAdmin = async (req, res) => {
           include: [{ model: User, as: "host" }], // assuming host user association
         },
         {
-          model: Users,
+          model: User,
           as: "guest",
         },
       ],
