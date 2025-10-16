@@ -478,7 +478,6 @@ exports.deleteCarLocation = async (req, res) => {
       .json({ message: "Error deleting car location", error: error.message });
   }
 };
-const { Car, CarPhoto, CarDocument } = require("../models");
 
 exports.getCars = async (req, res) => {
   try {
@@ -493,17 +492,16 @@ exports.getCars = async (req, res) => {
         {
           model: CarDocument,
           attributes: ["city_of_registration"],
-          required: true,
+          // do NOT use 'as' here since it's not in model associations
+          // required: false is default and safe here
         },
       ],
     });
 
-    // Log the raw result for debugging (remove in production)
-    console.log(
-      "Cars fetched with CarDocument:",
-      JSON.stringify(cars, null, 2)
-    );
+    // Log full raw response for debugging
+    console.log("Cars with CarDocument:", JSON.stringify(cars, null, 2));
 
+    // Map & format API response
     const formattedCars = cars.map((car) => ({
       id: car.id,
       name: car.model,
@@ -511,12 +509,14 @@ exports.getCars = async (req, res) => {
       year: car.year,
       price: parseFloat(car.price_per_hour),
       image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.CarDocument?.city_of_registration || "Not specified",
+      location: car.CarDocument
+        ? car.CarDocument.city_of_registration
+        : "Not specified",
     }));
 
     res.json(formattedCars);
-  } catch (err) {
-    console.error("Error fetching cars:", err);
+  } catch (error) {
+    console.error("Error fetching cars:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
