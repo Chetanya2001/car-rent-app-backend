@@ -159,7 +159,6 @@ exports.bookCar = async (req, res) => {
 // ========== Admin: Get All Bookings ==========
 exports.getAllBookingsAdmin = async (req, res) => {
   try {
-    // Only allow admins - authorization middleware should ensure this
     const bookings = await Booking.findAll({
       include: [
         {
