@@ -478,22 +478,31 @@ exports.deleteCarLocation = async (req, res) => {
       .json({ message: "Error deleting car location", error: error.message });
   }
 };
+const { Car, CarPhoto, CarDocument } = require("../models");
+
 exports.getCars = async (req, res) => {
   try {
     const cars = await Car.findAll({
       include: [
         {
           model: CarPhoto,
-          as: "photos", // has alias, so keep it
+          as: "photos",
           attributes: ["photo_url"],
           limit: 1,
         },
         {
-          model: CarDocument, // no alias here
+          model: CarDocument,
           attributes: ["city_of_registration"],
+          required: false, // include cars even if no CarDocument exists
         },
       ],
     });
+
+    // Log the raw result for debugging (remove in production)
+    console.log(
+      "Cars fetched with CarDocument:",
+      JSON.stringify(cars, null, 2)
+    );
 
     const formattedCars = cars.map((car) => ({
       id: car.id,
@@ -502,7 +511,7 @@ exports.getCars = async (req, res) => {
       year: car.year,
       price: parseFloat(car.price_per_hour),
       image: car.photos?.length > 0 ? car.photos[0].photo_url : null,
-      location: car.CarDocument?.city_of_registration || "Not specified", // Use CarDocument property here
+      location: car.CarDocument?.city_of_registration || "Not specified",
     }));
 
     res.json(formattedCars);
