@@ -776,6 +776,7 @@ exports.getCarsByHostId = async (req, res) => {
 
 exports.getAdminCars = async (req, res) => {
   try {
+    console.log("🔍 Fetching admin cars with details...");
     const cars = await Car.findAll({
       include: [
         {
