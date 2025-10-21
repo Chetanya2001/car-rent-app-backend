@@ -774,17 +774,6 @@ exports.getCarsByHostId = async (req, res) => {
   }
 };
 
-const { Op } = require("sequelize");
-const {
-  Car,
-  CarDocument,
-  CarFeatures,
-  CarLocation,
-  CarStandards,
-  Booking,
-  User,
-} = require("../models");
-
 exports.getAdminCars = async (req, res) => {
   try {
     const cars = await Car.findAll({
