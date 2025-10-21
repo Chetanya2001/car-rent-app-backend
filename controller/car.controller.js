@@ -788,7 +788,6 @@ exports.getAdminCars = async (req, res) => {
             "owner_name",
             "city_of_registration",
             "registration_type",
-            "fuel",
           ],
         },
         {
