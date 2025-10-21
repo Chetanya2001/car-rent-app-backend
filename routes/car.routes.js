@@ -130,6 +130,7 @@ router.post("/get-city", verifyToken, carController.getCityOfRegistration);
 
 router.post(
   "/admin-cars",
+  console.log("Request received to /admin-cars"),
   verifyToken,
   checkRole(["admin"]),
   carController.getAdminCars
