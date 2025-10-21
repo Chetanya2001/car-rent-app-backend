@@ -132,7 +132,7 @@ router.post(
   "/admin-cars",
   verifyToken,
   checkRole(["admin"]),
-  carController.getAllCarsAdmin
+  carController.getAdminCars
 );
 
 module.exports = router;
