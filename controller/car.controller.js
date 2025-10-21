@@ -5,6 +5,7 @@ const {
   CarLocation,
   Booking,
 } = require("../models");
+
 const { Op } = require("sequelize");
 const { uploadToS3 } = require("../utils/s3Upload");
 // Add Car
