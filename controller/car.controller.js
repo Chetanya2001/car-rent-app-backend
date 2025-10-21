@@ -793,6 +793,7 @@ exports.getAdminCars = async (req, res) => {
         },
         {
           model: CarStandards,
+          as: "standards",
           attributes: ["seats", "fuel", "mileage", "transmission"],
         },
         {
