@@ -62,6 +62,7 @@ module.exports = (sequelize) => {
     Car.hasOne(models.CarLocation, { foreignKey: "car_id" });
     Car.hasMany(models.CarPhoto, { foreignKey: "car_id", as: "photos" });
     Car.hasOne(models.CarFeatures, { foreignKey: "car_id", as: "features" });
+    Car.hasOne(models.CarStandards, { foreignKey: "car_id", as: "standards" });
   };
 
   return Car;
