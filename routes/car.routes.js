@@ -128,4 +128,11 @@ router.post("/my-host-cars", verifyToken, carController.getCarsByHostId);
 
 router.post("/get-city", verifyToken, carController.getCityOfRegistration);
 
+router.post(
+  "/admin-cars",
+  verifyToken,
+  checkRole(["admin"]),
+  carController.getAllCarsAdmin
+);
+
 module.exports = router;

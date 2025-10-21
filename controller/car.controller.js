@@ -772,3 +772,68 @@ exports.getCarsByHostId = async (req, res) => {
     });
   }
 };
+exports.getAdminCars = async (req, res) => {
+  try {
+    const cars = await Car.findAll({
+      include: [
+        {
+          model: CarDocument,
+          attributes: [
+            "rc_number",
+            "owner_name",
+            "city_of_registration",
+            "registration_type",
+            "fuel",
+          ],
+        },
+        { model: CarLocation, attributes: ["city"] },
+        { model: CarFeatures, as: "features", attributes: ["seatingCapacity"] },
+        {
+          model: Booking,
+          required: false,
+          attributes: ["id", "status", "start_datetime", "end_datetime"],
+          where: {
+            status: "booked",
+            start_datetime: { [Op.lte]: new Date() },
+            end_datetime: { [Op.gte]: new Date() },
+          },
+        },
+        { model: User, as: "host", attributes: ["name"] },
+      ],
+    });
+
+    const formattedCars = cars.map((car) => {
+      // Booked status logic
+      const isBooked = car.Bookings && car.Bookings.length > 0;
+      const status = isBooked ? "Rented" : "Available";
+      const month = car.createdAt
+        ? car.createdAt.toLocaleString("default", { month: "long" })
+        : "";
+
+      return {
+        id: car.id,
+        carNo: car.CarDocument?.rc_number || "",
+        name: `${car.make || ""} ${car.model || ""}`.trim(),
+        type: car.CarDocument?.registration_type || "",
+        price: Number(car.price_per_hour) || 0,
+        status, // "Available" | "Rented"
+        location:
+          car.CarLocation?.city || car.CarDocument?.city_of_registration || "",
+        year: car.year,
+        month,
+        fuelType: car.CarDocument?.fuel || "",
+        seatingCapacity: car.CarFeatures?.seatingCapacity || 0,
+        hostedBy: car.CarDocument?.owner_name || "",
+        isVerified: car.status === "approved", // <------ CRITICAL MAPPING CHANGE!
+        ratings: car.ratings || 0,
+      };
+    });
+
+    res.status(200).json({ cars: formattedCars });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching admin cars",
+      error: error?.message,
+    });
+  }
+};
