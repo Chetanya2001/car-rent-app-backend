@@ -4,6 +4,7 @@ const {
   CarPhoto,
   CarLocation,
   Booking,
+  CarStandards,
 } = require("../models");
 
 const { Op } = require("sequelize");
