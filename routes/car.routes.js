@@ -4,8 +4,6 @@ const router = express.Router();
 const carController = require("../controller/car.controller");
 const { verifyToken, checkRole } = require("../middleware/authmiddleware");
 const multer = require("multer");
-console.log("✅ Loaded carController:", typeof carController);
-console.log("✅ Keys:", Object.keys(carController));
 
 // ========= Multer setup =========
 const storage = multer.memoryStorage(); // store in memory for S3

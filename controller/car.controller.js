@@ -774,6 +774,17 @@ exports.getCarsByHostId = async (req, res) => {
   }
 };
 
+const { Op } = require("sequelize");
+const {
+  Car,
+  CarDocument,
+  CarFeatures,
+  CarLocation,
+  CarStandards,
+  Booking,
+  User,
+} = require("../models");
+
 exports.getAdminCars = async (req, res) => {
   try {
     const cars = await Car.findAll({
@@ -788,26 +799,32 @@ exports.getAdminCars = async (req, res) => {
             "fuel",
           ],
         },
-        { model: CarLocation, attributes: ["city"] },
-        { model: CarFeatures, as: "features", attributes: ["seatingCapacity"] },
+        {
+          model: CarStandards,
+          attributes: ["seats", "fuel", "mileage", "transmission"],
+        },
         {
           model: Booking,
           required: false,
-          attributes: ["id", "status", "start_datetime", "end_datetime"],
+          attributes: ["status", "start_datetime", "end_datetime"],
           where: {
             status: "booked",
             start_datetime: { [Op.lte]: new Date() },
             end_datetime: { [Op.gte]: new Date() },
           },
         },
-        { model: User, as: "host", attributes: ["name"] },
+        {
+          model: User,
+          as: "host",
+          attributes: ["name"],
+        },
       ],
     });
 
     const formattedCars = cars.map((car) => {
-      // Booked status logic
       const isBooked = car.Bookings && car.Bookings.length > 0;
       const status = isBooked ? "Rented" : "Available";
+
       const month = car.createdAt
         ? car.createdAt.toLocaleString("default", { month: "long" })
         : "";
@@ -818,24 +835,24 @@ exports.getAdminCars = async (req, res) => {
         name: `${car.make || ""} ${car.model || ""}`.trim(),
         type: car.CarDocument?.registration_type || "",
         price: Number(car.price_per_hour) || 0,
-        status, // "Available" | "Rented"
-        location:
-          car.CarLocation?.city || car.CarDocument?.city_of_registration || "",
-        year: car.year,
+        status,
+        location: car.CarDocument?.city_of_registration || "",
+        year: car.year || 0,
         month,
-        fuelType: car.CarDocument?.fuel || "",
-        seatingCapacity: car.CarFeatures?.seatingCapacity || 0,
-        hostedBy: car.CarDocument?.owner_name || "",
-        isVerified: car.status === "approved", // <------ CRITICAL MAPPING CHANGE!
+        fuelType: car.CarStandards?.fuel || car.CarDocument?.fuel || "",
+        seatingCapacity: car.CarStandards?.seats || 0,
+        hostedBy: car.CarDocument?.owner_name || car.host?.name || "",
+        isVerified: car.status === "approved",
         ratings: car.ratings || 0,
       };
     });
 
     res.status(200).json({ cars: formattedCars });
   } catch (error) {
+    console.error("❌ Error fetching admin cars:", error);
     res.status(500).json({
       message: "Error fetching admin cars",
-      error: error?.message,
+      error: error.message,
     });
   }
 };
