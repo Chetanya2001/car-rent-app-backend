@@ -772,6 +772,7 @@ exports.getCarsByHostId = async (req, res) => {
     });
   }
 };
+
 exports.getAdminCars = async (req, res) => {
   try {
     const cars = await Car.findAll({
