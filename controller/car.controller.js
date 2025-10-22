@@ -808,7 +808,7 @@ exports.getAdminCars = async (req, res) => {
         {
           model: User,
           as: "host",
-          attributes: ["name"],
+          attributes: ["first_name", "last_name"],
         },
       ],
     });
