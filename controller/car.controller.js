@@ -377,10 +377,17 @@ exports.deleteCar = async (req, res) => {
   try {
     const { car_id } = req.params;
 
+    console.log("Deleting CarPhotos for car_id:", car_id);
     await CarPhoto.destroy({ where: { car_id } });
+
+    console.log("Deleting CarDocuments for car_id:", car_id);
     await CarDocument.destroy({ where: { car_id } });
-    await Car.destroy({ where: { id: car_id } });
+
+    console.log("Deleting CarFeatures for car_id:", car_id);
     await CarFeatures.destroy({ where: { car_id } });
+
+    console.log("Deleting Car for id:", car_id);
+    await Car.destroy({ where: { id: car_id } });
 
     res.status(200).json({ status: "deleted" });
   } catch (error) {
