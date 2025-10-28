@@ -6,6 +6,7 @@ const {
   Booking,
   CarStandards,
   User,
+  CarFeatures,
 } = require("../models");
 
 const { Op } = require("sequelize");
@@ -379,6 +380,7 @@ exports.deleteCar = async (req, res) => {
     await CarPhoto.destroy({ where: { car_id } });
     await CarDocument.destroy({ where: { car_id } });
     await Car.destroy({ where: { id: car_id } });
+    await CarFeatures.destroy({ where: { car_id } });
 
     res.status(200).json({ status: "deleted" });
   } catch (error) {
