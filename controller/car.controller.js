@@ -386,7 +386,7 @@ exports.deleteCar = async (req, res) => {
     console.log("Deleting CarFeatures for car_id:", car_id);
     await CarFeatures.destroy({ where: { car_id } });
     console.log("Deleted CarStandards for car_id:", car_id);
-    await CarStandards.destroy({ where: { car_id: id } });
+    await CarStandards.destroy({ where: { car_id: car_id } });
 
     console.log("Deleting Car for id:", car_id);
     await Car.destroy({ where: { id: car_id } });
