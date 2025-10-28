@@ -77,7 +77,7 @@ router.post(
 );
 
 router.delete(
-  "/deleteCar/:car_id",
+  "/delete-car/:car_id",
   verifyToken,
   checkRole(["admin", "host"]),
   carController.deleteCar
