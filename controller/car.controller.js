@@ -389,8 +389,12 @@ exports.deleteCar = async (req, res) => {
     console.log("Deleting Car for id:", car_id);
     await Car.destroy({ where: { id: car_id } });
 
+    // Log before sending response
+    console.log("All deletions done. Sending success response.");
+
     res.status(200).json({ status: "deleted" });
   } catch (error) {
+    console.error("Delete car error:", error);
     res.status(500).json({
       message: "Error deleting car",
       error: error.message,
