@@ -280,3 +280,25 @@ exports.deleteUser = async (req, res) => {
     return res.status(500).json({ message: "Failed to delete user." });
   }
 };
+
+// ======================= ALL HOSTS (ADMIN) =======================
+exports.getAllHosts = async (req, res) => {
+  try {
+    const hosts = await User.findAll({
+      where: { role: "host" },
+      attributes: [
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "role",
+        "is_verified",
+      ],
+    });
+    return res.json(hosts);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to fetch hosts" });
+  }
+};

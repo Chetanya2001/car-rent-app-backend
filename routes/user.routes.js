@@ -31,4 +31,11 @@ router.delete(
   userController.deleteUser
 );
 
+router.get(
+  "/get-hosts",
+  verifyToken,
+  checkRole(["admin"]),
+  userController.getAllHosts
+);
+
 module.exports = router;
