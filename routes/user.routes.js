@@ -24,4 +24,11 @@ router.get("/verify-email", userController.verifyEmail);
 
 router.post("/support-mail", userController.sendSupportMessage);
 
+router.delete(
+  "/delete-user/:id",
+  verifyToken,
+  checkRole(["admin"]),
+  userController.deleteUser
+);
+
 module.exports = router;

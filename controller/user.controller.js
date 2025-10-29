@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
-const { User } = require("../models");
+const { User, UserProfile, UserDocuments } = require("../models");
 // const { sendWhatsAppVerification } = require("../utils/whatsappService");
 
 // 🔹 Common transporter (Hostinger SMTP)
@@ -251,5 +251,32 @@ exports.sendSupportMessage = async (req, res) => {
   } catch (error) {
     console.error("Support form error:", error);
     return res.status(500).json({ message: "Failed to send support message" });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id; // or req.user.id if deleting logged-in user
+
+    // Find the user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Destroy associated documents
+    await UserDocuments.destroy({ where: { user_id: userId } });
+
+    // Destroy associated profile
+    await UserProfile.destroy({ where: { user_id: userId } });
+
+    await user.destroy();
+
+    return res.json({
+      message: "User and all associated data deleted successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to delete user." });
   }
 };
