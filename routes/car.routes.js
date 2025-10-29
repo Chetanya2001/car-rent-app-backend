@@ -136,7 +136,7 @@ router.post(
 );
 
 router.put(
-  "/edit-car",
+  "/edit-car/:id",
   verifyToken,
   checkRole(["admin"]),
   carController.adminEditCar
