@@ -6,7 +6,7 @@ const { verifyToken, checkRole } = require("../middleware/authmiddleware");
 const multer = require("multer");
 
 // ========= Multer setup =========
-const storage = multer.memoryStorage(); // store in memory for S3
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // ========= Routes =========
