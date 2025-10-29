@@ -863,12 +863,12 @@ exports.getAdminCars = async (req, res) => {
     });
   }
 };
-
 exports.adminEditCar = async (req, res) => {
   const t = await Car.sequelize.transaction(); // transaction to ensure data consistency
   try {
+    const { id } = req.params; // ✅ get car_id from params
+
     const {
-      car_id,
       make,
       model,
       year,
@@ -892,17 +892,17 @@ exports.adminEditCar = async (req, res) => {
       transmission,
     } = req.body;
 
-    if (!car_id) {
-      return res.status(400).json({ message: "car_id is required" });
+    if (!id) {
+      return res.status(400).json({ message: "Car ID (params) is required" });
     }
 
     // ✅ Step 1: Find the car
-    const car = await Car.findByPk(car_id);
+    const car = await Car.findByPk(id);
     if (!car) {
       return res.status(404).json({ message: "Car not found" });
     }
 
-    // ✅ Step 2: Update car main table
+    // ✅ Step 2: Update main Car table
     await car.update(
       {
         make,
@@ -916,8 +916,8 @@ exports.adminEditCar = async (req, res) => {
       { transaction: t }
     );
 
-    // ✅ Step 3: Update CarDocument if exists
-    let carDoc = await CarDocument.findOne({ where: { car_id } });
+    // ✅ Step 3: Update or Create CarDocument
+    let carDoc = await CarDocument.findOne({ where: { car_id: id } });
     if (carDoc) {
       await carDoc.update(
         {
@@ -933,10 +933,9 @@ exports.adminEditCar = async (req, res) => {
         { transaction: t }
       );
     } else {
-      // Create if missing
       carDoc = await CarDocument.create(
         {
-          car_id,
+          car_id: id,
           owner_name,
           rc_number,
           rc_valid_till,
@@ -950,22 +949,17 @@ exports.adminEditCar = async (req, res) => {
       );
     }
 
-    // ✅ Step 4: Update CarStandards if exists
-    let carStandard = await CarStandards.findOne({ where: { car_id } });
+    // ✅ Step 4: Update or Create CarStandards
+    let carStandard = await CarStandards.findOne({ where: { car_id: id } });
     if (carStandard) {
       await carStandard.update(
-        {
-          seats,
-          fuel,
-          mileage,
-          transmission,
-        },
+        { seats, fuel, mileage, transmission },
         { transaction: t }
       );
     } else {
-      await CarStandards.create(
+      carStandard = await CarStandards.create(
         {
-          car_id,
+          car_id: id,
           seats,
           fuel,
           mileage,
@@ -980,11 +974,7 @@ exports.adminEditCar = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Car details updated successfully by admin",
-      data: {
-        car,
-        carDoc,
-        carStandard,
-      },
+      data: { car, carDoc, carStandard },
     });
   } catch (error) {
     await t.rollback();
