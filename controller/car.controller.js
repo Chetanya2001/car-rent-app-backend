@@ -863,3 +863,136 @@ exports.getAdminCars = async (req, res) => {
     });
   }
 };
+
+exports.adminEditCar = async (req, res) => {
+  const t = await Car.sequelize.transaction(); // transaction to ensure data consistency
+  try {
+    const {
+      car_id,
+      make,
+      model,
+      year,
+      price_per_hour,
+      kms_driven,
+      available_from,
+      available_till,
+      // CarDocument fields
+      owner_name,
+      rc_number,
+      rc_valid_till,
+      city_of_registration,
+      registration_type,
+      insurance_company,
+      insurance_idv_value,
+      insurance_valid_till,
+      // CarStandards fields
+      seats,
+      fuel,
+      mileage,
+      transmission,
+    } = req.body;
+
+    if (!car_id) {
+      return res.status(400).json({ message: "car_id is required" });
+    }
+
+    // ✅ Step 1: Find the car
+    const car = await Car.findByPk(car_id);
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+
+    // ✅ Step 2: Update car main table
+    await car.update(
+      {
+        make,
+        model,
+        year,
+        price_per_hour,
+        kms_driven,
+        available_from,
+        available_till,
+      },
+      { transaction: t }
+    );
+
+    // ✅ Step 3: Update CarDocument if exists
+    let carDoc = await CarDocument.findOne({ where: { car_id } });
+    if (carDoc) {
+      await carDoc.update(
+        {
+          owner_name,
+          rc_number,
+          rc_valid_till,
+          city_of_registration,
+          registration_type,
+          insurance_company,
+          insurance_idv_value,
+          insurance_valid_till,
+        },
+        { transaction: t }
+      );
+    } else {
+      // Create if missing
+      carDoc = await CarDocument.create(
+        {
+          car_id,
+          owner_name,
+          rc_number,
+          rc_valid_till,
+          city_of_registration,
+          registration_type,
+          insurance_company,
+          insurance_idv_value,
+          insurance_valid_till,
+        },
+        { transaction: t }
+      );
+    }
+
+    // ✅ Step 4: Update CarStandards if exists
+    let carStandard = await CarStandards.findOne({ where: { car_id } });
+    if (carStandard) {
+      await carStandard.update(
+        {
+          seats,
+          fuel,
+          mileage,
+          transmission,
+        },
+        { transaction: t }
+      );
+    } else {
+      await CarStandards.create(
+        {
+          car_id,
+          seats,
+          fuel,
+          mileage,
+          transmission,
+        },
+        { transaction: t }
+      );
+    }
+
+    await t.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Car details updated successfully by admin",
+      data: {
+        car,
+        carDoc,
+        carStandard,
+      },
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error("Error in adminEditCar:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating car details by admin",
+      error: error.message,
+    });
+  }
+};

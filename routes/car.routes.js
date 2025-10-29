@@ -135,4 +135,11 @@ router.post(
   carController.getAdminCars
 );
 
+router.put(
+  "/edit-car",
+  verifyAdmin,
+  checkRole(["admin"]),
+  carController.adminEditCar
+);
+
 module.exports = router;
