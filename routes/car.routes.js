@@ -137,7 +137,7 @@ router.post(
 
 router.put(
   "/edit-car",
-  verifyAdmin,
+  verifyToken,
   checkRole(["admin"]),
   carController.adminEditCar
 );
