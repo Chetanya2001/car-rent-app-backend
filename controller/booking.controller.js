@@ -270,3 +270,21 @@ exports.getGuestBookings = async (req, res) => {
     });
   }
 };
+
+exports.deleteBooking = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    await booking.destroy();
+
+    return res.json({ message: "Booking deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting booking:", error);
+    return res.status(500).json({ message: "Failed to delete booking." });
+  }
+};

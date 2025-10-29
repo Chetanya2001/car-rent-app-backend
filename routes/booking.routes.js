@@ -7,25 +7,23 @@ const {
   getAllBookingsAdmin,
   getHostBookings,
   getGuestBookings,
+  deleteBooking,
 } = require("../controller/booking.controller");
-const { verifyToken } = require("../middleware/authmiddleware");
 
-// Search cars
+const { verifyToken, checkRole } = require("../middleware/authmiddleware");
+
 router.post("/search-cars", SearchCars);
 
-// View a car
 router.post("/view-car", ViewaCar);
 
-// Book a car
 router.post("/book-car", verifyToken, bookCar);
 
-// Get bookings (Admin)
 router.get("/admin/bookings", verifyToken, getAllBookingsAdmin);
 
-// Get bookings for host (cars owned)
 router.get("/host/bookings", verifyToken, getHostBookings);
 
-// Get bookings for guest
 router.get("/guest/bookings", verifyToken, getGuestBookings);
+
+router.delete("/delete-booking/:id", verifyToken, deleteBooking);
 
 module.exports = router;
