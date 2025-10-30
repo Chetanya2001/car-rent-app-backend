@@ -38,4 +38,10 @@ router.get(
   userController.getAllHosts
 );
 
+router.put(
+  "/update-user/:id",
+  verifyToken,
+  checkRole(["admin"]),
+  userController.updateUser
+);
 module.exports = router;

@@ -302,3 +302,59 @@ exports.getAllHosts = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch hosts" });
   }
 };
+
+// ======================= UPDATE USER (ADMIN) =======================
+exports.updateUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Define updatable fields
+    const updatableFields = [
+      "first_name",
+      "last_name",
+      "email",
+      "phone",
+      "role",
+      "is_verified",
+      "whatsapp_verified",
+      "profile_pic",
+    ];
+
+    // Extract only allowed fields from req.body
+    const updates = {};
+    updatableFields.forEach((field) => {
+      if (typeof req.body[field] !== "undefined") {
+        updates[field] = req.body[field];
+      }
+    });
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update." });
+    }
+
+    // Find user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Optionally: Prevent changing email to one already in use (for uniqueness)
+    if (updates.email && updates.email !== user.email) {
+      const emailExists = await User.findOne({
+        where: { email: updates.email },
+      });
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already in use." });
+      }
+    }
+
+    // Update and save
+    Object.assign(user, updates);
+    await user.save();
+
+    return res.json({ message: "User updated successfully.", user });
+  } catch (error) {
+    console.error("User update failed:", error);
+    return res.status(500).json({ message: "Failed to update user." });
+  }
+};
