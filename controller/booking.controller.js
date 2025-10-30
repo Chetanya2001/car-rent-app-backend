@@ -288,3 +288,58 @@ exports.deleteBooking = async (req, res) => {
     return res.status(500).json({ message: "Failed to delete booking." });
   }
 };
+
+// ======================= Edit Booking =======================
+exports.editBooking = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const {
+      start_datetime,
+      end_datetime,
+      pickup_address,
+      pickup_lat,
+      pickup_long,
+      drop_address,
+      drop_lat,
+      drop_long,
+      insure_amount,
+      driver_amount,
+      status,
+    } = req.body;
+
+    // Find existing booking
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Update only allowed fields if provided
+    if (start_datetime) booking.start_datetime = start_datetime;
+    if (end_datetime) booking.end_datetime = end_datetime;
+    if (pickup_address) booking.pickup_address = pickup_address;
+    if (typeof pickup_lat !== "undefined") booking.pickup_lat = pickup_lat;
+    if (typeof pickup_long !== "undefined") booking.pickup_long = pickup_long;
+    if (drop_address) booking.drop_address = drop_address;
+    if (typeof drop_lat !== "undefined") booking.drop_lat = drop_lat;
+    if (typeof drop_long !== "undefined") booking.drop_long = drop_long;
+    if (typeof insure_amount !== "undefined")
+      booking.insure_amount = insure_amount;
+    if (typeof driver_amount !== "undefined")
+      booking.driver_amount = driver_amount;
+    if (status) booking.status = status;
+
+    // Save updates
+    await booking.save();
+
+    return res.json({
+      message: "Booking updated successfully",
+      booking,
+    });
+  } catch (error) {
+    console.error("Error updating booking:", error);
+    return res.status(500).json({
+      message: "Failed to update booking",
+      error: error.message,
+    });
+  }
+};
