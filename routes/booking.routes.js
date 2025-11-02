@@ -8,7 +8,7 @@ const {
   getHostBookings,
   getGuestBookings,
   deleteBooking,
-  updateBooking,
+  editBooking,
 } = require("../controller/booking.controller");
 
 const { verifyToken, checkRole } = require("../middleware/authmiddleware");
@@ -27,6 +27,6 @@ router.get("/guest/bookings", verifyToken, getGuestBookings);
 
 router.delete("/delete-booking/:id", verifyToken, deleteBooking);
 
-router.put("/update-booking/:id", verifyToken, updateBooking);
+router.put("/update-booking/:id", verifyToken, editBooking);
 
 module.exports = router;
