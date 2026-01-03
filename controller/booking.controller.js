@@ -216,7 +216,7 @@ exports.getHostBookings = async (req, res) => {
         {
           model: User,
           as: "guest", // Match association alias
-          attributes: ["id", "first_name", "last_name", "email"],
+          attributes: ["id", "first_name", "last_name", "email", "phone"],
         },
       ],
       order: [["start_datetime", "DESC"]],
