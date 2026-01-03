@@ -100,48 +100,37 @@ const getCarFeaturesById = async (req, res) => {
 const updateCarFeatures = async (req, res) => {
   try {
     const { car_id } = req.params;
-    const {
-      airconditions,
-      child_seat,
-      gps,
-      luggage,
-      music,
-      seat_belt,
-      sleeping_bed,
-      water,
-      bluetooth,
-      onboard_computer,
-      audio_input,
-      long_term_trips,
-      car_kit,
-      remote_central_locking,
-      climate_control,
-    } = req.body;
 
-    const carFeatures = await CarFeatures.findOne({ where: { car_id } });
+    // 1️⃣ Find the car
+    const car = await Car.findByPk(car_id);
+
+    if (!car) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    // 2️⃣ OWNERSHIP CHECK (🔥 CORE FIX 🔥)
+    if (car.host_id !== req.user.id) {
+      return res.status(403).json({
+        error: "You are not allowed to update features of this car",
+      });
+    }
+
+    // 3️⃣ Find car features
+    const carFeatures = await CarFeatures.findOne({
+      where: { car_id },
+    });
+
     if (!carFeatures) {
       return res.status(404).json({ error: "Car features not found" });
     }
 
-    await carFeatures.update({
-      airconditions,
-      child_seat,
-      gps,
-      luggage,
-      music,
-      seat_belt,
-      sleeping_bed,
-      water,
-      bluetooth,
-      onboard_computer,
-      audio_input,
-      long_term_trips,
-      car_kit,
-      remote_central_locking,
-      climate_control,
-    });
+    // 4️⃣ Update allowed fields
+    await carFeatures.update(req.body);
 
-    return res.status(200).json(carFeatures);
+    return res.status(200).json({
+      message: "Car features updated successfully",
+      data: carFeatures,
+    });
   } catch (error) {
     console.error("Error updating car features:", error);
     return res.status(500).json({ error: "Internal server error" });

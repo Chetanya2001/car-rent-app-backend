@@ -7,7 +7,7 @@ exports.getCarDetails = async (req, res) => {
 
     const car = await Car.findOne({
       where: { id: car_id },
-      attributes: ["id", "make", "model", "year", "description"],
+      attributes: ["id", "make", "model", "year", "description", "host_id"],
       include: [
         {
           model: CarFeatures,
