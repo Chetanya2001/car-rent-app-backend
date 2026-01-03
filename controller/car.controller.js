@@ -9,7 +9,7 @@ const {
   CarFeatures,
 } = require("../models");
 
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const { uploadToS3 } = require("../utils/s3Upload");
 // Add Car
 exports.addCar = async (req, res) => {
