@@ -9,4 +9,5 @@ router.use("/car-features", require("./carFeatures.routes"));
 router.use("/car-details", require("./carDetails.routes"));
 router.use("/user-document", require("./userDocument.routes"));
 router.use("/car-standards", require("./carStandard.routes"));
+router.use("/intercity-bookings", require("./intercity-booking.routes"));
 module.exports = router;

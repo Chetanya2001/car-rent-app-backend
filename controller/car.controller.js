@@ -631,11 +631,37 @@ exports.searchCars = async (req, res) => {
     const pickup = new Date(pickup_datetime);
     const dropoff = new Date(dropoff_datetime);
 
+    if (pickup >= dropoff) {
+      return res.status(400).json({
+        message: "Dropoff time must be after pickup time",
+      });
+    }
+
     const cars = await Car.findAll({
       where: {
+        // car must be generally available in this range
         available_from: { [Op.lte]: pickup },
         available_till: { [Op.gte]: dropoff },
+
+        // 🔥 EXCLUDE cars that have ANY overlapping booking
+        id: {
+          [Op.notIn]: Sequelize.literal(`
+            (
+              SELECT DISTINCT car_id
+              FROM Bookings
+              WHERE status IN ('initiated', 'booked')
+              AND (
+                (start_datetime <= '${pickup.toISOString()}' AND end_datetime >= '${pickup.toISOString()}')
+                OR
+                (start_datetime <= '${dropoff.toISOString()}' AND end_datetime >= '${dropoff.toISOString()}')
+                OR
+                (start_datetime >= '${pickup.toISOString()}' AND end_datetime <= '${dropoff.toISOString()}')
+              )
+            )
+          `),
+        },
       },
+
       include: [
         {
           model: CarDocument,
@@ -655,53 +681,29 @@ exports.searchCars = async (req, res) => {
         },
         {
           model: CarPhoto,
-          as: "photos", // must match your model association alias
+          as: "photos",
           required: false,
           attributes: ["photo_url"],
         },
-        {
-          model: Booking,
-          required: false,
-          attributes: ["id", "start_datetime", "end_datetime"],
-          where: {
-            [Op.or]: [
-              {
-                start_datetime: { [Op.lte]: pickup },
-                end_datetime: { [Op.gte]: pickup },
-              },
-              {
-                start_datetime: { [Op.lte]: dropoff },
-                end_datetime: { [Op.gte]: dropoff },
-              },
-              {
-                start_datetime: { [Op.gte]: pickup },
-                end_datetime: { [Op.lte]: dropoff },
-              },
-            ],
-          },
-        },
       ],
-      logging: console.log,
     });
 
-    const availableCars = cars
-      .filter((car) => !car.Bookings || car.Bookings.length === 0)
-      .map((car) => ({
-        id: car.id,
-        make: car.make,
-        model: car.model,
-        year: car.year,
-        price_per_hour: car.price_per_hour,
-        available_from: car.available_from,
-        available_till: car.available_till,
-        documents: car.CarDocument, // correct if no alias
-        photos: car.photos?.map((p) => p.photo_url) || [], // ✅ use alias here
-      }));
+    const response = cars.map((car) => ({
+      id: car.id,
+      make: car.make,
+      model: car.model,
+      year: car.year,
+      price_per_hour: car.price_per_hour,
+      available_from: car.available_from,
+      available_till: car.available_till,
+      documents: car.CarDocument,
+      photos: car.photos?.map((p) => p.photo_url) || [],
+    }));
 
-    res.json({ cars: availableCars });
+    return res.status(200).json({ cars: response });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    console.error("Search Cars Error:", error);
+    return res.status(500).json({
       message: "Internal Server Error",
       error: error.message,
     });
