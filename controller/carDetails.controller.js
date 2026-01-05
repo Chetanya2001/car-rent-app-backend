@@ -106,7 +106,7 @@ exports.getCarDetails = async (req, res) => {
       photos:
         car.photos?.map((p) => ({ id: p.id, photo_url: p.photo_url })) || [],
 
-      insurance: car.documents
+      insurance: car.CarDocument
         ? {
             company: car.documents.insurance_company || null,
             idv_value: car.documents.insurance_idv_value
