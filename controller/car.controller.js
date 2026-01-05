@@ -431,6 +431,55 @@ exports.deleteCar = async (req, res) => {
   try {
     const { car_id } = req.params;
 
+    if (!car_id) {
+      return res.status(400).json({
+        status: "error",
+        message: "car_id is required",
+      });
+    }
+
+    const now = new Date();
+
+    // 🔍 1. Check for ACTIVE or FUTURE bookings
+    const activeOrFutureBooking = await Booking.findOne({
+      where: {
+        car_id,
+        status: {
+          [Op.in]: ["initiated", "booked"],
+        },
+        end_datetime: {
+          [Op.gte]: now,
+        },
+      },
+    });
+
+    if (activeOrFutureBooking) {
+      return res.status(409).json({
+        status: "blocked",
+        message:
+          "Car cannot be deleted because it has active or upcoming bookings",
+      });
+    }
+
+    // 🔍 2. Check if ANY booking exists (past)
+    const anyPastBooking = await Booking.findOne({
+      where: {
+        car_id,
+      },
+    });
+
+    // 🟡 Past booking exists → Make car invisible
+    if (anyPastBooking) {
+      await Car.update({ is_visible: false }, { where: { id: car_id } });
+
+      return res.status(200).json({
+        status: "hidden",
+        message:
+          "Car has past bookings, so it has been made invisible instead of deleting",
+      });
+    }
+
+    // ✅ 3. No bookings at all → FULL DELETE
     console.log("Deleting CarPhotos for car_id:", car_id);
     await CarPhoto.destroy({ where: { car_id } });
 
@@ -439,22 +488,28 @@ exports.deleteCar = async (req, res) => {
 
     console.log("Deleting CarFeatures for car_id:", car_id);
     await CarFeatures.destroy({ where: { car_id } });
-    console.log("Deleted CarStandards for car_id:", car_id);
-    await CarStandards.destroy({ where: { car_id: car_id } });
+
+    console.log("Deleting CarStandards for car_id:", car_id);
+    await CarStandards.destroy({ where: { car_id } });
+
+    console.log("Deleting CarLocation for car_id:", car_id);
+    await CarLocation.destroy({ where: { car_id } });
 
     console.log("Deleting Car for id:", car_id);
     await Car.destroy({ where: { id: car_id } });
 
-    // Log before sending response
     console.log("All deletions done. Sending success response.");
 
-    res.status(200).json({ status: "deleted" });
+    return res.status(200).json({
+      status: "deleted",
+      message: "Car deleted permanently",
+    });
   } catch (error) {
     console.error("Delete car error:", error);
-    res.status(500).json({
+    return res.status(500).json({
+      status: "error",
       message: "Error deleting car",
       error: error.message,
-      status: "error",
     });
   }
 };
