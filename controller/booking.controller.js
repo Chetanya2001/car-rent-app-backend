@@ -243,7 +243,7 @@ exports.getGuestBookings = async (req, res) => {
             {
               model: User,
               as: "host",
-              attributes: ["id", "first_name", "last_name", "email"],
+              attributes: ["id", "first_name", "last_name", "email", "phone"],
             },
             {
               model: CarPhoto,
