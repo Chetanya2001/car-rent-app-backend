@@ -259,6 +259,60 @@ exports.addInsurance = async (req, res) => {
     });
   }
 };
+exports.updateInsurance = async (req, res) => {
+  try {
+    const host_id = req.user.id;
+    const {
+      car_id,
+      insurance_company,
+      insurance_idv_value,
+      insurance_valid_till,
+    } = req.body;
+
+    if (!car_id) {
+      return res.status(400).json({ message: "car_id is required" });
+    }
+
+    // Find car to ensure ownership
+    const car = await Car.findOne({ where: { id: car_id, host_id } });
+    if (!car) {
+      return res.status(403).json({ message: "Unauthorized or car not found" });
+    }
+
+    // Find document
+    const carDoc = await CarDocument.findOne({ where: { car_id } });
+    if (!carDoc) {
+      return res.status(404).json({ message: "Insurance document not found" });
+    }
+
+    // Update fields if provided
+    if (insurance_company) carDoc.insurance_company = insurance_company;
+    if (insurance_idv_value !== undefined) {
+      const formattedIdv = parseFloat(insurance_idv_value).toFixed(2);
+      if (!isNaN(formattedIdv)) carDoc.insurance_idv_value = formattedIdv;
+    }
+    if (insurance_valid_till)
+      carDoc.insurance_valid_till = insurance_valid_till;
+
+    // Handle image upload if provided
+    if (req.files?.insurance_image) {
+      carDoc.insurance_image = await uploadToS3(req.files.insurance_image[0]);
+    }
+
+    await carDoc.save();
+
+    res.status(200).json({
+      message: "Insurance details updated successfully",
+      data: carDoc,
+    });
+  } catch (error) {
+    console.error("Error updating insurance:", error);
+    res.status(500).json({
+      message: "Error updating insurance",
+      error: error.message,
+    });
+  }
+};
 
 // Upload Car Images
 // ...existing code...
