@@ -51,6 +51,10 @@ module.exports = (sequelize) => {
         allowNull: true,
         defaultValue: null,
       },
+      is_visible: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+      },
     },
     { timestamps: true }
   );

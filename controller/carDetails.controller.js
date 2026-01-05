@@ -227,6 +227,11 @@ exports.updateCarDetails = async (req, res) => {
 
       if (req.files?.insurance_image) {
         const url = await uploadToS3(req.files.insurance_image[0]);
+        console.log("Received insurance image:", {
+          name: file.originalname,
+          type: file.mimetype,
+          size: file.size,
+        });
         carDoc.insurance_image = url;
       }
 
