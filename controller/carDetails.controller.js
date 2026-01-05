@@ -53,8 +53,7 @@ exports.getCarDetails = async (req, res) => {
         },
         {
           model: CarDocument,
-          as: "documents",
-          required: false, // Allow car even if no document yet
+          required: false,
           attributes: [
             "insurance_company",
             "insurance_idv_value",
