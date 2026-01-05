@@ -12,7 +12,7 @@ router.post("/getCarDetails", carDetailsController.getCarDetails);
 router.put(
   "/update-car-details",
   verifyToken,
-  checkRole("host"),
+  checkRole(["host"]),
   upload.fields([{ name: "insurance_image", maxCount: 1 }]),
   carDetailsController.updateCarDetails
 );

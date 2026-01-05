@@ -130,6 +130,11 @@ exports.getCarDetails = async (req, res) => {
 
 // Update Car Details + Pricing + Insurance (Owner Host Only)
 exports.updateCarDetails = async (req, res) => {
+  console.log("=== UPDATE CAR DETAILS CALLED ===");
+  console.log("req.body:", req.body);
+  console.log("req.files:", req.files);
+  console.log("req.files?.insurance_image:", req.files?.insurance_image);
+  console.log("=====================================");
   const t = await Car.sequelize.transaction();
   try {
     const host_id = req.user.id;
