@@ -108,12 +108,12 @@ exports.getCarDetails = async (req, res) => {
 
       insurance: car.CarDocument
         ? {
-            company: car.documents.insurance_company || null,
-            idv_value: car.documents.insurance_idv_value
-              ? parseFloat(car.documents.insurance_idv_value)
+            company: car.CarDocument.insurance_company || null,
+            idv_value: car.CarDocument.insurance_idv_value
+              ? parseFloat(car.CarDocument.insurance_idv_value)
               : null,
-            valid_till: car.documents.insurance_valid_till || null,
-            image: car.documents.insurance_image || null,
+            valid_till: car.CarDocument.insurance_valid_till || null,
+            image: car.CarDocument.insurance_image || null,
           }
         : null,
     };
