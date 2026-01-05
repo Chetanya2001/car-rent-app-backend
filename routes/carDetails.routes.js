@@ -9,8 +9,8 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.post("/getCarDetails", carDetailsController.getCarDetails);
-router.post(
-  "/updateCarDetails",
+router.put(
+  "/update-car-details",
   verifyToken,
   checkRole("host"),
   upload.fields([{ name: "insurance_image", maxCount: 1 }]),
