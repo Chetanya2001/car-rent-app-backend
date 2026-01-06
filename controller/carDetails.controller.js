@@ -224,15 +224,24 @@ exports.updateCarDetails = async (req, res) => {
       }
       if (insurance_valid_till !== undefined)
         carDoc.insurance_valid_till = insurance_valid_till;
+      // In updateCarDetails controller - REPLACE file handling (lines ~85-95):
 
-      if (req.files?.insurance_image) {
-        const url = await uploadToS3(req.files.insurance_image[0]);
-        console.log("Received insurance image:", {
-          name: file.originalname,
-          type: file.mimetype,
-          size: file.size,
-        });
-        carDoc.insurance_image = url;
+      if (
+        req.files?.insurance_image ||
+        req.file?.fieldname === "insurance_image"
+      ) {
+        // ✅ Support BOTH: req.files (Native) + req.file (Web)
+        const file = req.files?.insurance_image?.[0] || req.file;
+
+        if (file) {
+          const url = await uploadToS3(file);
+          console.log("✅ Uploaded insurance image:", {
+            name: file.originalname,
+            type: file.mimetype,
+            size: file.size,
+          });
+          carDoc.insurance_image = url;
+        }
       }
 
       await carDoc.save({ transaction: t });
