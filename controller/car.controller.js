@@ -775,7 +775,10 @@ exports.searchCars = async (req, res) => {
         {
           model: CarDocument,
           required: true,
-          where: { city_of_registration: city },
+          where: Sequelize.where(
+            Sequelize.fn("LOWER", Sequelize.col("city_of_registration")),
+            city.toLowerCase()
+          ),
           attributes: [
             "car_id",
             "rc_image_front",

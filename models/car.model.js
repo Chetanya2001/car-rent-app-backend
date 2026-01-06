@@ -20,6 +20,11 @@ module.exports = (sequelize) => {
         allowNull: true, // optional at creation
         defaultValue: 0,
       },
+      car_mode: {
+        type: DataTypes.ENUM("selfdrive", "intercity", "both"),
+        allowNull: false,
+        defaultValue: "selfdrive",
+      },
       status: {
         type: DataTypes.ENUM(
           "pending",
@@ -33,6 +38,11 @@ module.exports = (sequelize) => {
       price_per_hour: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true, // optional
+        defaultValue: null,
+      },
+      price_per_km: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
         defaultValue: null,
       },
       available_from: {
@@ -53,6 +63,17 @@ module.exports = (sequelize) => {
       is_visible: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
+      },
+      selfdrive_drop_policy: {
+        type: DataTypes.ENUM("not_available", "flexible", "fixed"),
+        allowNull: false,
+        defaultValue: "not_available",
+      },
+
+      selfdrive_drop_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: null,
       },
     },
     { timestamps: true }
