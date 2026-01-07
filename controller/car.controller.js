@@ -707,6 +707,8 @@ exports.updateAvailability = async (req, res) => {
       car_location,
     } = req.body;
 
+    console.log("Update Availability Request Body:", req.body);
+
     // 1️⃣ Basic validation
     if (!car_id || !car_mode || !available_from || !available_till) {
       return res.status(400).json({
