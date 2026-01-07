@@ -6,6 +6,7 @@ const {
   Booking,
   CarStandards,
   User,
+  CarLocation,
   CarFeatures,
 } = require("../models");
 
@@ -692,16 +693,42 @@ exports.getCityOfRegistration = async (req, res) => {
 // Update Car Availability & Rent
 exports.updateAvailability = async (req, res) => {
   try {
-    const { car_id, price_per_hour, available_from, available_till } = req.body;
+    const {
+      car_id,
+      car_mode, // selfdrive | intercity | both
+      available_from,
+      available_till,
 
-    if (!car_id) {
-      return res.status(400).json({ message: "car_id is required" });
-    }
-    if (!price_per_hour || !available_from || !available_till) {
+      price_per_hour,
+      price_per_km,
+
+      selfdrive_drop_policy, // not_available | flexible | fixed
+      selfdrive_drop_amount,
+
+      car_location,
+    } = req.body;
+
+    // 1️⃣ Basic validation
+    if (!car_id || !car_mode || !available_from || !available_till) {
       return res.status(400).json({
         message:
-          "price_per_hour, available_from, and available_till are required",
+          "car_id, car_mode, available_from and available_till are required",
       });
+    }
+
+    // ENUM validation (VERY IMPORTANT)
+    const validCarModes = ["selfdrive", "intercity", "both"];
+    const validDropPolicies = ["not_available", "flexible", "fixed"];
+
+    if (!validCarModes.includes(car_mode)) {
+      return res.status(400).json({ message: "Invalid car_mode" });
+    }
+
+    if (
+      selfdrive_drop_policy &&
+      !validDropPolicies.includes(selfdrive_drop_policy)
+    ) {
+      return res.status(400).json({ message: "Invalid selfdrive_drop_policy" });
     }
 
     const car = await Car.findByPk(car_id);
@@ -709,25 +736,100 @@ exports.updateAvailability = async (req, res) => {
       return res.status(404).json({ message: "Car not found" });
     }
 
+    // 2️⃣ Service-type based validation
+    if (
+      (car_mode === "selfdrive" || car_mode === "both") &&
+      price_per_hour == null
+    ) {
+      return res.status(400).json({
+        message: "price_per_hour is required for selfdrive service",
+      });
+    }
+
+    if (
+      (car_mode === "intercity" || car_mode === "both") &&
+      price_per_km == null
+    ) {
+      return res.status(400).json({
+        message: "price_per_km is required for intercity service",
+      });
+    }
+
+    if (
+      selfdrive_drop_policy &&
+      selfdrive_drop_policy !== "not_available" &&
+      selfdrive_drop_amount == null
+    ) {
+      return res.status(400).json({
+        message:
+          "selfdrive_drop_amount is required when drop policy is enabled",
+      });
+    }
+
     await car.update({
-      price_per_hour,
+      car_mode,
+
       available_from,
       available_till,
+
+      price_per_hour:
+        car_mode === "selfdrive" || car_mode === "both" ? price_per_hour : null,
+
+      price_per_km:
+        car_mode === "intercity" || car_mode === "both" ? price_per_km : null,
+
+      selfdrive_drop_policy:
+        car_mode === "selfdrive" || car_mode === "both"
+          ? selfdrive_drop_policy || "not_available"
+          : "not_available",
+
+      selfdrive_drop_amount:
+        selfdrive_drop_policy && selfdrive_drop_policy !== "not_available"
+          ? selfdrive_drop_amount
+          : null,
+
+      status: "active",
     });
 
-    res.status(200).json({
+    // 4️⃣ Handle CarLocation table (UPSERT)
+    if (car_location) {
+      const { address, city, lat, lng } = car_location;
+
+      const existingLocation = await CarLocation.findOne({
+        where: { car_id },
+      });
+
+      if (existingLocation) {
+        await existingLocation.update({
+          address,
+          city,
+          latitude: lat,
+          longitude: lng,
+        });
+      } else {
+        await CarLocation.create({
+          car_id,
+          address,
+          city,
+          latitude: lat,
+          longitude: lng,
+        });
+      }
+    }
+
+    return res.status(200).json({
       success: true,
-      message: "Car availability updated successfully",
-      data: car,
+      message: "Car availability and location updated successfully",
     });
   } catch (error) {
     console.error("Error updating availability:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Error updating car availability",
       error: error.message,
     });
   }
 };
+
 // Search Cars API
 exports.searchCars = async (req, res) => {
   try {
