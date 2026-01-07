@@ -6,7 +6,6 @@ const {
   Booking,
   CarStandards,
   User,
-  CarLocation,
   CarFeatures,
 } = require("../models");
 
