@@ -834,28 +834,34 @@ exports.updateAvailability = async (req, res) => {
 // Search Cars API
 exports.searchCars = async (req, res) => {
   try {
-    const { city, pickup_datetime, dropoff_datetime } = req.body;
+    const { pickup_location, pickup_datetime, dropoff_datetime } = req.body;
 
-    if (!city || !pickup_datetime || !dropoff_datetime) {
+    if (
+      !pickup_location ||
+      !pickup_location.latitude ||
+      !pickup_location.longitude ||
+      !pickup_datetime ||
+      !dropoff_datetime
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+
+    const { latitude, longitude } = pickup_location;
 
     const pickup = new Date(pickup_datetime);
     const dropoff = new Date(dropoff_datetime);
 
     if (pickup >= dropoff) {
-      return res.status(400).json({
-        message: "Dropoff time must be after pickup time",
-      });
+      return res
+        .status(400)
+        .json({ message: "Dropoff time must be after pickup time" });
     }
 
     const cars = await Car.findAll({
       where: {
-        // car must be generally available in this range
         available_from: { [Op.lte]: pickup },
         available_till: { [Op.gte]: dropoff },
 
-        // 🔥 EXCLUDE cars that have ANY overlapping booking
         id: {
           [Op.notIn]: Sequelize.literal(`
             (
@@ -876,14 +882,25 @@ exports.searchCars = async (req, res) => {
 
       include: [
         {
+          model: CarLocation,
+          required: true,
+          attributes: ["latitude", "longitude", "address", "city"],
+          where: Sequelize.literal(`
+            (
+              ${EARTH_RADIUS_KM} * acos(
+                cos(radians(${latitude}))
+                * cos(radians(latitude))
+                * cos(radians(longitude) - radians(${longitude}))
+                + sin(radians(${latitude}))
+                * sin(radians(latitude))
+              )
+            ) <= 50
+          `),
+        },
+        {
           model: CarDocument,
           required: true,
-          where: Sequelize.where(
-            Sequelize.fn("LOWER", Sequelize.col("city_of_registration")),
-            city.toLowerCase()
-          ),
           attributes: [
-            "car_id",
             "rc_image_front",
             "rc_image_back",
             "owner_name",
@@ -909,8 +926,7 @@ exports.searchCars = async (req, res) => {
       model: car.model,
       year: car.year,
       price_per_hour: car.price_per_hour,
-      available_from: car.available_from,
-      available_till: car.available_till,
+      pickup_location: car.CarLocation,
       documents: car.CarDocument,
       photos: car.photos?.map((p) => p.photo_url) || [],
     }));
