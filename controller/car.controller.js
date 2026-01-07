@@ -835,7 +835,7 @@ exports.updateAvailability = async (req, res) => {
 exports.searchCars = async (req, res) => {
   try {
     const { pickup_location, pickup_datetime, dropoff_datetime } = req.body;
-
+    const EARTH_RADIUS_KM = 6371;
     if (
       !pickup_location ||
       !pickup_location.latitude ||
