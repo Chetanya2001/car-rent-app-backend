@@ -8,6 +8,7 @@ const {
   User,
   CarFeatures,
 } = require("../models");
+const { mapSelfDriveCapabilities } = require("../utils/carPolicy");
 
 const { Op, Sequelize } = require("sequelize");
 const { uploadToS3 } = require("../utils/s3Upload");
@@ -925,6 +926,10 @@ exports.searchCars = async (req, res) => {
       make: car.make,
       model: car.model,
       year: car.year,
+      availability: {
+        pickup_from_host_location: true,
+      },
+      capabilities: mapSelfDriveCapabilities(car),
       price_per_hour: car.price_per_hour,
       pickup_location: car.CarLocation,
       documents: car.CarDocument,
