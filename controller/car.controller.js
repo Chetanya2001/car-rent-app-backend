@@ -955,7 +955,7 @@ exports.searchIntercityCars = async (req, res) => {
       luggage = 0,
     } = req.body;
 
-    /* -------------------- VALIDATION -------------------- */
+    /* ---------------- VALIDATION ---------------- */
     if (
       !pickup_location?.latitude ||
       !pickup_location?.longitude ||
@@ -965,15 +965,15 @@ exports.searchIntercityCars = async (req, res) => {
       !drop_location?.city ||
       !pickup_datetime
     ) {
-      return res.status(400).json({
-        message: "Invalid intercity search payload",
-      });
+      return res
+        .status(400)
+        .json({ message: "Invalid intercity search payload" });
     }
 
     if (pickup_location.city === drop_location.city) {
-      return res.status(400).json({
-        message: "Pickup and drop city cannot be the same for intercity trips",
-      });
+      return res
+        .status(400)
+        .json({ message: "Pickup and drop city cannot be the same" });
     }
 
     const pickupTime = new Date(pickup_datetime);
@@ -983,7 +983,7 @@ exports.searchIntercityCars = async (req, res) => {
     const EARTH_RADIUS_KM = 6371;
     const MAX_PICKUP_RADIUS_KM = 50;
 
-    /* -------------------- SEARCH -------------------- */
+    /* ---------------- SEARCH ---------------- */
     const cars = await Car.findAll({
       where: {
         is_intercity_enabled: true,
@@ -992,14 +992,15 @@ exports.searchIntercityCars = async (req, res) => {
         max_luggage: { [Op.gte]: luggage },
         available_from: { [Op.lte]: pickupTime },
         available_till: { [Op.gte]: dropoffTime },
+
         id: {
           [Op.notIn]: Sequelize.literal(`
             (
               SELECT DISTINCT car_id
               FROM Bookings
               WHERE status IN ('initiated','booked')
-              AND start_datetime <= ${Sequelize.escape(dropoffTime)}
-              AND end_datetime >= ${Sequelize.escape(pickupTime)}
+              AND start_datetime <= '${dropoffTime.toISOString()}'
+              AND end_datetime >= '${pickupTime.toISOString()}'
             )
           `),
         },
@@ -1033,7 +1034,7 @@ exports.searchIntercityCars = async (req, res) => {
       ],
     });
 
-    /* -------------------- RESPONSE -------------------- */
+    /* ---------------- RESPONSE ---------------- */
     const response = cars.map((car) => ({
       id: car.id,
       make: car.make,
