@@ -123,6 +123,7 @@ router.get("/", carController.getCars);
 router.post("/more-details", carController.updateAvailability);
 
 router.post("/search", carController.searchCars);
+router.post("/search-intercity", carController.searchIntercityCars);
 
 router.post("/my-host-cars", verifyToken, carController.getCarsByHostId);
 

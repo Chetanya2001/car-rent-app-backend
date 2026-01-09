@@ -945,6 +945,119 @@ exports.searchCars = async (req, res) => {
     });
   }
 };
+exports.searchIntercityCars = async (req, res) => {
+  try {
+    const {
+      pickup_location,
+      drop_location,
+      pickup_datetime,
+      pax = 1,
+      luggage = 0,
+    } = req.body;
+
+    /* -------------------- VALIDATION -------------------- */
+    if (
+      !pickup_location?.latitude ||
+      !pickup_location?.longitude ||
+      !pickup_location?.city ||
+      !drop_location?.latitude ||
+      !drop_location?.longitude ||
+      !drop_location?.city ||
+      !pickup_datetime
+    ) {
+      return res.status(400).json({
+        message: "Invalid intercity search payload",
+      });
+    }
+
+    if (pickup_location.city === drop_location.city) {
+      return res.status(400).json({
+        message: "Pickup and drop city cannot be the same for intercity trips",
+      });
+    }
+
+    const pickupTime = new Date(pickup_datetime);
+    const dropoffTime = new Date(pickupTime);
+    dropoffTime.setHours(dropoffTime.getHours() + 48);
+
+    const EARTH_RADIUS_KM = 6371;
+    const MAX_PICKUP_RADIUS_KM = 50;
+
+    /* -------------------- SEARCH -------------------- */
+    const cars = await Car.findAll({
+      where: {
+        is_intercity_enabled: true,
+        driver_required: true,
+        max_pax: { [Op.gte]: pax },
+        max_luggage: { [Op.gte]: luggage },
+        available_from: { [Op.lte]: pickupTime },
+        available_till: { [Op.gte]: dropoffTime },
+        id: {
+          [Op.notIn]: Sequelize.literal(`
+            (
+              SELECT DISTINCT car_id
+              FROM Bookings
+              WHERE status IN ('initiated','booked')
+              AND start_datetime <= ${Sequelize.escape(dropoffTime)}
+              AND end_datetime >= ${Sequelize.escape(pickupTime)}
+            )
+          `),
+        },
+      },
+
+      include: [
+        {
+          model: CarLocation,
+          required: true,
+          attributes: ["latitude", "longitude", "city", "address"],
+          where: {
+            city: pickup_location.city,
+            [Op.and]: Sequelize.literal(`
+              (
+                ${EARTH_RADIUS_KM} * acos(
+                  cos(radians(${pickup_location.latitude}))
+                  * cos(radians(latitude))
+                  * cos(radians(longitude) - radians(${pickup_location.longitude}))
+                  + sin(radians(${pickup_location.latitude}))
+                  * sin(radians(latitude))
+                )
+              ) <= ${MAX_PICKUP_RADIUS_KM}
+            `),
+          },
+        },
+        {
+          model: CarPhoto,
+          as: "photos",
+          attributes: ["photo_url"],
+        },
+      ],
+    });
+
+    /* -------------------- RESPONSE -------------------- */
+    const response = cars.map((car) => ({
+      id: car.id,
+      make: car.make,
+      model: car.model,
+      year: car.year,
+      price_per_km: car.price_per_km,
+
+      pickup_city: pickup_location.city,
+      drop_city: drop_location.city,
+
+      pickup_location: {
+        latitude: car.CarLocation.latitude,
+        longitude: car.CarLocation.longitude,
+      },
+
+      photos: car.photos?.map((p) => p.photo_url) || [],
+    }));
+
+    return res.status(200).json({ cars: response });
+  } catch (error) {
+    console.error("❌ Intercity search error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 // Get Cars by Host ID with details (no bookings)
 exports.getCarsByHostId = async (req, res) => {
