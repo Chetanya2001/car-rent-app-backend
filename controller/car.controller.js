@@ -1098,6 +1098,7 @@ exports.getCarsByHostId = async (req, res) => {
       model: car.model,
       year: car.year,
       price_per_hour: parseFloat(car.price_per_hour),
+      price_per_km: parseFloat(car.price_per_km),
       kms_driven: car.kms_driven,
       available_from: car.available_from,
       available_till: car.available_till,
