@@ -986,13 +986,8 @@ exports.searchIntercityCars = async (req, res) => {
     /* ---------------- SEARCH ---------------- */
     const cars = await Car.findAll({
       where: {
-        is_intercity_enabled: true,
-        driver_required: true,
-        max_pax: { [Op.gte]: pax },
-        max_luggage: { [Op.gte]: luggage },
         available_from: { [Op.lte]: pickupTime },
         available_till: { [Op.gte]: dropoffTime },
-
         id: {
           [Op.notIn]: Sequelize.literal(`
             (
