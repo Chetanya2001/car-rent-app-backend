@@ -947,13 +947,7 @@ exports.searchCars = async (req, res) => {
 };
 exports.searchIntercityCars = async (req, res) => {
   try {
-    const {
-      pickup_location,
-      drop_location,
-      pickup_datetime,
-      pax = 1,
-      luggage = 0,
-    } = req.body;
+    const { pickup_location, drop_location, pickup_datetime } = req.body;
 
     /* ---------------- VALIDATION ---------------- */
     if (
@@ -1039,11 +1033,6 @@ exports.searchIntercityCars = async (req, res) => {
 
       pickup_city: pickup_location.city,
       drop_city: drop_location.city,
-
-      pickup_location: {
-        latitude: car.CarLocation.latitude,
-        longitude: car.CarLocation.longitude,
-      },
 
       photos: car.photos?.map((p) => p.photo_url) || [],
     }));
