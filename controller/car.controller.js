@@ -860,6 +860,7 @@ exports.searchCars = async (req, res) => {
 
     const cars = await Car.findAll({
       where: {
+        car_mode: { [Op.in]: ["selfdrive", "both"] },
         available_from: { [Op.lte]: pickup },
         available_till: { [Op.gte]: dropoff },
 
@@ -982,6 +983,7 @@ exports.searchIntercityCars = async (req, res) => {
       where: {
         available_from: { [Op.lte]: pickupTime },
         available_till: { [Op.gte]: dropoffTime },
+        car_mode: { [Op.in]: ["intercity", "both"] },
         id: {
           [Op.notIn]: Sequelize.literal(`
             (
