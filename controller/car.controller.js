@@ -1030,7 +1030,6 @@ exports.searchIntercityCars = async (req, res) => {
       id: car.id,
       make: car.make,
       model: car.model,
-      year: car.year,
       price_per_km: car.price_per_km,
 
       pickup_city: pickup_location.city,
