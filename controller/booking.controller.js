@@ -1,345 +1,110 @@
-// ✅ Correct
-const { Car, CarLocation, Booking, User, CarPhoto } = require("../models");
-const nodemailer = require("nodemailer");
+const {
+  Booking,
+  Car,
+  User,
+  SelfDriveBooking,
+  IntercityBooking,
+} = require("../models");
 
-// Global transporter config
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: process.env.EMAIL_SECURE === "true",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// ========== SearchCars ==========
-exports.SearchCars = async (req, res) => {
+/**
+ * GUEST BOOKINGS
+ */
+exports.getGuestBookings = async (req, res) => {
   try {
-    const { city, start_datetime, end_datetime } = req.body;
+    const bookings = await Booking.findAll({
+      where: { guest_id: req.user.id },
+      include: [Car, SelfDriveBooking, IntercityBooking],
+      order: [["createdAt", "DESC"]],
+    });
 
-    const cars = await Car.findAll({
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * HOST BOOKINGS
+ */
+exports.getHostBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.findAll({
       include: [
         {
-          model: CarLocation,
-          where: { city },
+          model: Car,
+          where: { host_id: req.user.id },
+          required: true,
         },
+        SelfDriveBooking,
+        IntercityBooking,
+        { model: User, as: "guest" },
       ],
+      order: [["createdAt", "DESC"]],
     });
 
-    res.status(200).json(cars);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error searching cars", error: error.message });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ========== ViewaCar ==========
-exports.ViewaCar = async (req, res) => {
-  try {
-    const { car_id } = req.body;
-
-    const car = await Car.findByPk(car_id, {
-      include: [CarLocation],
-    });
-
-    if (!car) return res.status(404).json({ message: "Car not found" });
-
-    res.status(200).json(car);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching car details", error: error.message });
-  }
-};
-
-// ========== BookaCar ==========
-
-exports.bookCar = async (req, res) => {
-  try {
-    const guest_id = req.user.id;
-
-    const {
-      car_id,
-      start_datetime,
-      end_datetime,
-      pickup_address,
-      pickup_lat,
-      pickup_long,
-      drop_address,
-      drop_lat,
-      drop_long,
-      insure_amount,
-      driver_amount,
-    } = req.body;
-
-    // Validate mandatory fields
-    if (
-      !car_id ||
-      !start_datetime ||
-      !end_datetime ||
-      !pickup_address ||
-      !pickup_lat ||
-      !pickup_long ||
-      !drop_address ||
-      !drop_lat ||
-      !drop_long
-    ) {
-      return res.status(400).json({
-        message:
-          "All of car_id, start_datetime, end_datetime, pickup and drop details are required",
-      });
-    }
-
-    // Fetch guest, car, host - validating existence
-    const guest = await User.findByPk(guest_id);
-    if (!guest) return res.status(404).json({ message: "Guest not found" });
-
-    const car = await Car.findByPk(car_id);
-    if (!car) return res.status(404).json({ message: "Car not found" });
-
-    const host = await User.findByPk(car.host_id);
-    if (!host) return res.status(404).json({ message: "Host not found" });
-
-    // Prepare email contents
-    const guestMailOptions = {
-      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
-      to: guest.email,
-      subject: `Booking initiated for car (ID: ${car_id})`,
-      html: `
-        <h3>Dear ${guest.first_name},</h3>
-        <p>Your booking for the car (ID: ${car_id}) is being processed.</p>
-        <p><b>Pickup:</b> ${pickup_address}</p>
-        <p><b>Drop:</b> ${drop_address}</p>
-        <p><b>From:</b> ${start_datetime}</p>
-        <p><b>To:</b> ${end_datetime}</p>
-        <p>Thank you for choosing Zip Drive!</p>
-      `,
-    };
-
-    const hostMailOptions = {
-      from: `"Zip Drive Support Team" <${process.env.EMAIL_USER}>`,
-      to: host.email,
-      subject: `Car booking alert: Car ID ${car_id}`,
-      html: `
-        <h3>Dear ${host.first_name},</h3>
-        <p>Your car (ID: ${car_id}) has been booked by ${guest.first_name} ${guest.last_name}.</p>
-        <p><b>Pickup:</b> ${pickup_address}</p>
-        <p><b>Drop:</b> ${drop_address}</p>
-        <p><b>From:</b> ${start_datetime}</p>
-        <p><b>To:</b> ${end_datetime}</p>
-        <p>Please prepare the car for the rental period.</p>
-      `,
-    };
-
-    // Send emails first - wait for both to succeed
-    await Promise.all([
-      transporter.sendMail(guestMailOptions),
-      transporter.sendMail(hostMailOptions),
-    ]);
-
-    // After successful emails, create booking record
-    const booking = await Booking.create({
-      guest_id,
-      car_id,
-      start_datetime,
-      end_datetime,
-      pickup_address,
-      pickup_lat,
-      pickup_long,
-      drop_address,
-      drop_lat,
-      drop_long,
-      insure_amount: insure_amount || 0,
-      driver_amount: driver_amount || 0,
-      status: "initiated",
-    });
-
-    // Respond with success and booking data
-    return res.status(201).json({
-      message: "Booking created successfully after email confirmation",
-      booking,
-    });
-  } catch (error) {
-    console.error("Error in bookCar:", error);
-    return res.status(500).json({
-      message: "Error creating booking",
-      error: error.message,
-    });
-  }
-};
-// ========== Admin: Get All Bookings ==========
+/**
+ * ADMIN BOOKINGS
+ */
 exports.getAllBookingsAdmin = async (req, res) => {
   try {
     const bookings = await Booking.findAll({
       include: [
-        {
-          model: Car,
-          include: [{ model: User, as: "host" }], // assuming host user association
-        },
-        {
-          model: User,
-          as: "guest",
-        },
+        Car,
+        { model: User, as: "guest" },
+        SelfDriveBooking,
+        IntercityBooking,
       ],
-      order: [["start_datetime", "DESC"]],
+      order: [["createdAt", "DESC"]],
     });
-    res.status(200).json(bookings);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching all bookings", error: error.message });
+
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ========== Host: Get My Cars' Bookings ==========
-exports.getHostBookings = async (req, res) => {
+/**
+ * EDIT BOOKING STATUS / AMOUNT
+ */
+exports.editBooking = async (req, res) => {
   try {
-    const host_id = req.user.id; // Assuming this is host's user ID
+    const booking = await Booking.findByPk(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
 
-    // Find bookings for cars owned by this host including photos
-    const bookings = await Booking.findAll({
-      include: [
-        {
-          model: Car,
-          where: { host_id }, // Only cars owned by current host
-          required: true,
-          include: [
-            {
-              model: CarPhoto,
-              as: "photos",
-              attributes: ["id", "photo_url"],
-            },
-          ],
-        },
-        {
-          model: User,
-          as: "guest", // Match association alias
-          attributes: ["id", "first_name", "last_name", "email", "phone"],
-        },
-      ],
-      order: [["start_datetime", "DESC"]],
-    });
+    const { status, total_amount } = req.body;
 
-    res.status(200).json(bookings);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching host bookings", error: error.message });
+    if (status) booking.status = status;
+    if (total_amount !== undefined) booking.total_amount = total_amount;
+
+    await booking.save();
+
+    res.json({ message: "Booking updated", booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-exports.getGuestBookings = async (req, res) => {
-  try {
-    const guest_id = req.user.id;
-
-    const bookings = await Booking.findAll({
-      where: { guest_id },
-      include: [
-        {
-          model: Car,
-          include: [
-            {
-              model: User,
-              as: "host",
-              attributes: ["id", "first_name", "last_name", "email", "phone"],
-            },
-            {
-              model: CarPhoto,
-              as: "photos",
-              attributes: ["id", "photo_url"],
-            },
-          ],
-        },
-        {
-          model: User,
-          as: "guest",
-          attributes: ["id", "first_name", "last_name", "email"],
-        },
-      ],
-      order: [["start_datetime", "DESC"]],
-    });
-
-    res.status(200).json(bookings);
-  } catch (error) {
-    console.error("Error fetching guest bookings:", error);
-    res.status(500).json({
-      message: "Error fetching guest bookings",
-      error: error.message,
-    });
-  }
-};
-
+/**
+ * DELETE BOOKING
+ */
 exports.deleteBooking = async (req, res) => {
   try {
-    const bookingId = req.params.id;
-
-    const booking = await Booking.findByPk(bookingId);
+    const booking = await Booking.findByPk(req.params.id);
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
     await booking.destroy();
-
-    return res.json({ message: "Booking deleted successfully." });
-  } catch (error) {
-    console.error("Error deleting booking:", error);
-    return res.status(500).json({ message: "Failed to delete booking." });
-  }
-};
-
-// ======================= Edit Booking =======================
-exports.editBooking = async (req, res) => {
-  try {
-    const bookingId = req.params.id;
-    const {
-      start_datetime,
-      end_datetime,
-      pickup_address,
-      pickup_lat,
-      pickup_long,
-      drop_address,
-      drop_lat,
-      drop_long,
-      insure_amount,
-      driver_amount,
-      status,
-    } = req.body;
-
-    // Find existing booking
-    const booking = await Booking.findByPk(bookingId);
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    // Update only allowed fields if provided
-    if (start_datetime) booking.start_datetime = start_datetime;
-    if (end_datetime) booking.end_datetime = end_datetime;
-    if (pickup_address) booking.pickup_address = pickup_address;
-    if (typeof pickup_lat !== "undefined") booking.pickup_lat = pickup_lat;
-    if (typeof pickup_long !== "undefined") booking.pickup_long = pickup_long;
-    if (drop_address) booking.drop_address = drop_address;
-    if (typeof drop_lat !== "undefined") booking.drop_lat = drop_lat;
-    if (typeof drop_long !== "undefined") booking.drop_long = drop_long;
-    if (typeof insure_amount !== "undefined")
-      booking.insure_amount = insure_amount;
-    if (typeof driver_amount !== "undefined")
-      booking.driver_amount = driver_amount;
-    if (status) booking.status = status;
-
-    // Save updates
-    await booking.save();
-
-    return res.json({
-      message: "Booking updated successfully",
-      booking,
-    });
-  } catch (error) {
-    console.error("Error updating booking:", error);
-    return res.status(500).json({
-      message: "Failed to update booking",
-      error: error.message,
-    });
+    res.json({ message: "Booking deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

@@ -1,9 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const {
-  SearchCars,
-  ViewaCar,
-  bookCar,
   getAllBookingsAdmin,
   getHostBookings,
   getGuestBookings,
@@ -12,12 +9,6 @@ const {
 } = require("../controller/booking.controller");
 
 const { verifyToken, checkRole } = require("../middleware/authmiddleware");
-
-router.post("/search-cars", SearchCars);
-
-router.post("/view-car", ViewaCar);
-
-router.post("/book-car", verifyToken, bookCar);
 
 router.get("/admin/bookings", verifyToken, getAllBookingsAdmin);
 
