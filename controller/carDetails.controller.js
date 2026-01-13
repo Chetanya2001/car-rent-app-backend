@@ -80,6 +80,7 @@ exports.getCarDetails = async (req, res) => {
       price_per_hour: car.price_per_hour
         ? parseFloat(car.price_per_hour)
         : null,
+      price_per_km: car.price_per_km ? parseFloat(car.price_per_km) : null,
       available_from: car.available_from,
       available_till: car.available_till,
       kms_driven: car.kms_driven || 0,
