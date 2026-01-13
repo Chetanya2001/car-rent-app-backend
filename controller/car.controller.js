@@ -611,7 +611,14 @@ exports.getCars = async (req, res) => {
   try {
     // Step 1: Fetch all cars
     const cars = await Car.findAll({
-      attributes: ["id", "make", "model", "year", "price_per_hour","price_per_km"],
+      attributes: [
+        "id",
+        "make",
+        "model",
+        "year",
+        "price_per_hour",
+        "price_per_km",
+      ],
       raw: true,
     });
 
@@ -643,7 +650,8 @@ exports.getCars = async (req, res) => {
         name: car.model,
         brand: car.make,
         year: car.year,
-        price: parseFloat(car.price_per_hour) || 0,
+        price_per_hour: parseFloat(car.price_per_hour) || 0,
+        price_per_km: parseFloat(car.price_per_km) || 0,
         image: photo ? photo.photo_url : null,
         location: doc ? doc.city_of_registration : "Not specified",
       };
