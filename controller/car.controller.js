@@ -611,7 +611,7 @@ exports.getCars = async (req, res) => {
   try {
     // Step 1: Fetch all cars
     const cars = await Car.findAll({
-      attributes: ["id", "make", "model", "year", "price_per_hour"],
+      attributes: ["id", "make", "model", "year", "price_per_hour","price_per_km"],
       raw: true,
     });
 

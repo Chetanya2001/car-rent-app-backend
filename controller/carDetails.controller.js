@@ -21,6 +21,7 @@ exports.getCarDetails = async (req, res) => {
         "host_id",
         "price_per_hour",
         "available_from",
+        "price_per_km",
         "available_till",
         "kms_driven",
       ],
