@@ -7,6 +7,7 @@ const {
   CarStandards,
   User,
   CarFeatures,
+  SelfDriveBooking,
 } = require("../models");
 const { mapSelfDriveCapabilities } = require("../utils/carPolicy");
 
@@ -845,6 +846,7 @@ exports.searchCars = async (req, res) => {
   try {
     const { pickup_location, pickup_datetime, dropoff_datetime } = req.body;
     const EARTH_RADIUS_KM = 6371;
+
     if (
       !pickup_location ||
       !pickup_location.latitude ||
@@ -856,7 +858,6 @@ exports.searchCars = async (req, res) => {
     }
 
     const { latitude, longitude } = pickup_location;
-
     const pickup = new Date(pickup_datetime);
     const dropoff = new Date(dropoff_datetime);
 
@@ -875,16 +876,19 @@ exports.searchCars = async (req, res) => {
         id: {
           [Op.notIn]: Sequelize.literal(`
             (
-              SELECT DISTINCT car_id
-              FROM Bookings
-              WHERE status IN ('initiated', 'booked')
-              AND (
-                (start_datetime <= '${pickup.toISOString()}' AND end_datetime >= '${pickup.toISOString()}')
-                OR
-                (start_datetime <= '${dropoff.toISOString()}' AND end_datetime >= '${dropoff.toISOString()}')
-                OR
-                (start_datetime >= '${pickup.toISOString()}' AND end_datetime <= '${dropoff.toISOString()}')
-              )
+              SELECT b.car_id
+              FROM Bookings b
+              INNER JOIN SelfDriveBookings sdb
+                ON sdb.booking_id = b.id
+              WHERE b.status IN ('initiated', 'booked')
+                AND b.booking_type = 'SELF_DRIVE'
+                AND (
+                  (sdb.start_datetime <= '${pickup.toISOString()}' AND sdb.end_datetime >= '${pickup.toISOString()}')
+                  OR
+                  (sdb.start_datetime <= '${dropoff.toISOString()}' AND sdb.end_datetime >= '${dropoff.toISOString()}')
+                  OR
+                  (sdb.start_datetime >= '${pickup.toISOString()}' AND sdb.end_datetime <= '${dropoff.toISOString()}')
+                )
             )
           `),
         },
@@ -910,22 +914,11 @@ exports.searchCars = async (req, res) => {
         {
           model: CarDocument,
           required: true,
-          attributes: [
-            "rc_image_front",
-            "rc_image_back",
-            "owner_name",
-            "insurance_company",
-            "insurance_idv_value",
-            "insurance_image",
-            "rc_number",
-            "rc_valid_till",
-          ],
         },
         {
           model: CarPhoto,
           as: "photos",
           required: false,
-          attributes: ["photo_url"],
         },
       ],
     });
