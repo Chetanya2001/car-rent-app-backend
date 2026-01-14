@@ -4,6 +4,7 @@ const {
   User,
   SelfDriveBooking,
   IntercityBooking,
+  CarPhoto,
 } = require("../models");
 
 /**
