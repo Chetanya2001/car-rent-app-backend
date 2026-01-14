@@ -57,11 +57,9 @@ exports.getHostBookings = async (req, res) => {
           model: Car,
           where: { host_id: req.user.id },
           required: true,
-        },
-        {
-          model: CarPhoto,
-          as: "photos",
-          attributes: ["id", "photo_url"],
+          include: [
+            { model: CarPhoto, as: "photos", attributes: ["id", "photo_url"] },
+          ],
         },
         SelfDriveBooking,
         IntercityBooking,
