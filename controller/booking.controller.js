@@ -13,16 +13,33 @@ exports.getGuestBookings = async (req, res) => {
   try {
     const bookings = await Booking.findAll({
       where: { guest_id: req.user.id },
-      include: [Car, SelfDriveBooking, IntercityBooking],
       order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: Car,
+          include: [
+            {
+              model: User,
+              as: "host",
+              attributes: ["id", "first_name", "last_name", "email", "phone"],
+            },
+          ],
+        },
+        {
+          model: SelfDriveBooking,
+        },
+        {
+          model: IntercityBooking,
+        },
+      ],
     });
 
     res.json(bookings);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
-
 /**
  * HOST BOOKINGS
  */
