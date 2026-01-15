@@ -8,6 +8,7 @@ const {
   User,
   CarFeatures,
   SelfDriveBooking,
+  IntercityBOoking,
 } = require("../models");
 const { mapSelfDriveCapabilities } = require("../utils/carPolicy");
 
@@ -973,8 +974,11 @@ exports.searchIntercityCars = async (req, res) => {
     }
 
     const pickupTime = new Date(pickup_datetime);
-    const dropoffTime = new Date(pickupTime);
-    dropoffTime.setHours(dropoffTime.getHours() + 48);
+    const blockStart = new Date(pickupTime);
+    blockStart.setHours(blockStart.getHours() - 48);
+
+    const blockEnd = new Date(pickupTime);
+    blockEnd.setHours(blockEnd.getHours() + 48);
 
     const EARTH_RADIUS_KM = 6371;
     const MAX_PICKUP_RADIUS_KM = 50;
@@ -982,17 +986,21 @@ exports.searchIntercityCars = async (req, res) => {
     /* ---------------- SEARCH ---------------- */
     const cars = await Car.findAll({
       where: {
-        available_from: { [Op.lte]: pickupTime },
-        available_till: { [Op.gte]: dropoffTime },
         car_mode: { [Op.in]: ["intercity", "both"] },
+
         id: {
           [Op.notIn]: Sequelize.literal(`
             (
-              SELECT DISTINCT car_id
-              FROM Bookings
-              WHERE status IN ('initiated','booked')
-              AND start_datetime <= '${dropoffTime.toISOString()}'
-              AND end_datetime >= '${pickupTime.toISOString()}'
+              SELECT b.car_id
+              FROM Bookings b
+              INNER JOIN IntercityBookings ib
+                ON ib.booking_id = b.id
+              WHERE b.booking_type = 'INTERCITY'
+                AND b.status IN ('initiated', 'booked')
+                AND b.createdAt BETWEEN
+                  '${blockStart.toISOString()}'
+                  AND
+                  '${blockEnd.toISOString()}'
             )
           `),
         },
@@ -1022,6 +1030,7 @@ exports.searchIntercityCars = async (req, res) => {
           model: CarPhoto,
           as: "photos",
           attributes: ["photo_url"],
+          required: false,
         },
       ],
     });
