@@ -147,6 +147,7 @@ exports.updateCarDetails = async (req, res) => {
       year,
       description,
       price_per_hour,
+      price_per_km,
       available_from,
       available_till,
       insurance_company,
@@ -185,6 +186,14 @@ exports.updateCarDetails = async (req, res) => {
         return res.status(400).json({ message: "Invalid price_per_hour" });
       }
       carUpdates.price_per_hour = parsed;
+    }
+    if (price_per_km !== undefined) {
+      const parsed = parseFloat(price_per_km);
+      if (isNaN(parsed) || parsed < 0) {
+        await t.rollback();
+        return res.status(400).json({ message: "Invalid price_per_km" });
+      }
+      carUpdates.price_per_km = parsed;
     }
     if (available_from !== undefined)
       carUpdates.available_from = available_from;
