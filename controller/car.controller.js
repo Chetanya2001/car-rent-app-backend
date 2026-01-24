@@ -626,8 +626,8 @@ exports.getCars = async (req, res) => {
         "price_per_km",
       ],
       include: [
-        { model: CarMake, attributes: ["name"] },
-        { model: CarModel, attributes: ["name"] },
+        { model: CarMake, as: "make", attributes: ["name"] },
+        { model: CarModel, as: "model", attributes: ["name"] },
       ],
       raw: true,
     });
@@ -657,8 +657,8 @@ exports.getCars = async (req, res) => {
 
       return {
         id: car.id,
-        name: car.CarModel.name,
-        brand: car.CarMake.name,
+        name: car.model.name,
+        brand: car.make.name,
         year: car.year,
         price_per_hour: parseFloat(car.price_per_hour) || 0,
         price_per_km: parseFloat(car.price_per_km) || 0,
