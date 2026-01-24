@@ -925,9 +925,11 @@ exports.searchCars = async (req, res) => {
         },
         {
           model: CarMake,
+          as: "make",
         },
         {
           model: CarModel,
+          as: "model",
         },
       ],
       order: [
@@ -938,8 +940,8 @@ exports.searchCars = async (req, res) => {
 
     const response = cars.map((car) => ({
       id: car.id,
-      make: car.CarMake.name,
-      model: car.CarModel.name,
+      make: car["make.name"],
+      model: car["model.name"],
       year: car.year,
       availability: {
         pickup_from_host_location: true,
@@ -1045,9 +1047,11 @@ exports.searchIntercityCars = async (req, res) => {
         },
         {
           model: CarMake,
+          as: "make",
         },
         {
           model: CarModel,
+          as: "model",
         },
       ],
       order: [[{ model: CarPhoto, as: "photos" }, "id", "ASC"]],
@@ -1056,8 +1060,8 @@ exports.searchIntercityCars = async (req, res) => {
     /* ---------------- RESPONSE ---------------- */
     const response = cars.map((car) => ({
       id: car.id,
-      make: car.CarMake.name,
-      model: car.CarModel.name,
+      make: car["make.name"],
+      model: car["model.name"],
       price_per_km: car.price_per_km,
 
       pickup_city: pickup_location.city,
@@ -1111,9 +1115,10 @@ exports.getCarsByHostId = async (req, res) => {
         },
         {
           model: CarMake,
+          as: "make",
           attributes: ["name"],
         },
-        { model: CarModel, attributes: ["name"] },
+        { model: CarModel, as: "model", attributes: ["name"] },
       ],
       order: [["createdAt", "DESC"]],
     });
@@ -1126,8 +1131,8 @@ exports.getCarsByHostId = async (req, res) => {
 
     const formattedCars = cars.map((car) => ({
       id: car.id,
-      make: car.CarMake.name,
-      model: car.CarModel.name,
+      make: car["make.name"],
+      model: car["model.name"],
       year: car.year,
       price_per_hour: parseFloat(car.price_per_hour),
       price_per_km: parseFloat(car.price_per_km),
