@@ -3,26 +3,43 @@ const { CarModel, CarMake } = require("../models");
 /**
  * CREATE CAR MODEL (ADMIN)
  */
-// In your carModel.controller.js
-exports.getModelsByMake = async (req, res) => {
+exports.createCarModel = async (req, res) => {
   try {
-    // We use req.query because the frontend is sending ?make_id=...
-    const { make_id } = req.query;
+    const { make_id, name, body_type } = req.body;
 
-    if (!make_id) {
-      return res.status(400).json({ message: "make_id is required" });
-    }
+    if (!make_id || !name)
+      return res.status(400).json({
+        message: "make_id and model name are required",
+      });
 
-    const models = await CarModel.findAll({
-      where: { make_id: make_id },
+    const make = await CarMake.findByPk(make_id);
+    if (!make) return res.status(404).json({ message: "Car make not found" });
+
+    const exists = await CarModel.findOne({
+      where: { make_id, name },
     });
 
-    res.status(200).json(models);
+    if (exists)
+      return res
+        .status(409)
+        .json({ message: "Model already exists for this make" });
+
+    const model = await CarModel.create({
+      make_id,
+      name,
+      body_type,
+    });
+
+    res.status(201).json({
+      message: "Car model created",
+      data: model,
+    });
   } catch (error) {
-    console.error("getModelsByMake error:", error);
+    console.error("createCarModel error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 /**
  * GET MODELS BY MAKE (PUBLIC)
  */
