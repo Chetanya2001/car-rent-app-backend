@@ -9,6 +9,8 @@ const {
   CarFeatures,
   SelfDriveBooking,
   IntercityBooking,
+  CarMake,
+  CarModel,
 } = require("../models");
 const { mapSelfDriveCapabilities } = require("../utils/carPolicy");
 
@@ -18,11 +20,12 @@ const { uploadToS3 } = require("../utils/s3Upload");
 exports.addCar = async (req, res) => {
   try {
     host_id = req.user.id;
-    const { make, model, year, description } = req.body;
+    const { make_id, model_id, year, description } = req.body;
 
     const car = await Car.create({
-      make,
-      model,
+      make_id,
+      model_id,
+      variant_id,
       year,
       description,
       host_id,
@@ -41,7 +44,7 @@ exports.addCar = async (req, res) => {
 exports.updateCar = async (req, res) => {
   try {
     const host_id = req.user.id;
-    const { car_id, make, model, year, description } = req.body;
+    const { car_id, make_id, model_id, year, description } = req.body;
 
     // Find car by car_id and host_id (ensures owner is updating their own car)
     const car = await Car.findOne({ where: { id: car_id, host_id } });
@@ -51,8 +54,8 @@ exports.updateCar = async (req, res) => {
     }
 
     // Update only provided fields
-    if (make !== undefined) car.make = make;
-    if (model !== undefined) car.model = model;
+    if (make_id !== undefined) car.make_id = make_id;
+    if (model_id !== undefined) car.model_id = model_id;
     if (year !== undefined) car.year = year;
     if (description !== undefined) car.description = description;
 
@@ -616,11 +619,15 @@ exports.getCars = async (req, res) => {
     const cars = await Car.findAll({
       attributes: [
         "id",
-        "make",
+        "make_id",
         "model",
         "year",
         "price_per_hour",
         "price_per_km",
+      ],
+      include: [
+        { model: CarMake, attributes: ["name"] },
+        { model: CarModel, attributes: ["name"] },
       ],
       raw: true,
     });
@@ -650,8 +657,8 @@ exports.getCars = async (req, res) => {
 
       return {
         id: car.id,
-        name: car.model,
-        brand: car.make,
+        name: car.CarModel.name,
+        brand: car.CarMake.name,
         year: car.year,
         price_per_hour: parseFloat(car.price_per_hour) || 0,
         price_per_km: parseFloat(car.price_per_km) || 0,
@@ -921,6 +928,12 @@ exports.searchCars = async (req, res) => {
           model: CarPhoto,
           as: "photos",
         },
+        {
+          model: CarMake,
+        },
+        {
+          model: CarModel,
+        },
       ],
       order: [
         ["createdAt", "DESC"],
@@ -930,8 +943,8 @@ exports.searchCars = async (req, res) => {
 
     const response = cars.map((car) => ({
       id: car.id,
-      make: car.make,
-      model: car.model,
+      make: car.CarMake.name,
+      model: car.CarModel.name,
       year: car.year,
       availability: {
         pickup_from_host_location: true,
@@ -1035,6 +1048,12 @@ exports.searchIntercityCars = async (req, res) => {
           as: "photos",
           required: false,
         },
+        {
+          model: CarMake,
+        },
+        {
+          model: CarModel,
+        },
       ],
       order: [[{ model: CarPhoto, as: "photos" }, "id", "ASC"]],
     });
@@ -1042,8 +1061,8 @@ exports.searchIntercityCars = async (req, res) => {
     /* ---------------- RESPONSE ---------------- */
     const response = cars.map((car) => ({
       id: car.id,
-      make: car.make,
-      model: car.model,
+      make: car.CarMake.name,
+      model: car.CarModel.name,
       price_per_km: car.price_per_km,
 
       pickup_city: pickup_location.city,
@@ -1095,6 +1114,11 @@ exports.getCarsByHostId = async (req, res) => {
           as: "photos",
           attributes: ["photo_url"],
         },
+        {
+          model: CarMake,
+          attributes: ["name"],
+        },
+        { model: CarModel, attributes: ["name"] },
       ],
       order: [["createdAt", "DESC"]],
     });
@@ -1107,8 +1131,8 @@ exports.getCarsByHostId = async (req, res) => {
 
     const formattedCars = cars.map((car) => ({
       id: car.id,
-      make: car.make,
-      model: car.model,
+      make: car.CarMake.name,
+      model: car.CarModel.name,
       year: car.year,
       price_per_hour: parseFloat(car.price_per_hour),
       price_per_km: parseFloat(car.price_per_km),
@@ -1179,6 +1203,14 @@ exports.getAdminCars = async (req, res) => {
           as: "host",
           attributes: ["first_name", "last_name"],
         },
+        {
+          model: CarMake,
+          attributes: ["name"],
+        },
+        {
+          model: CarModel,
+          attributes: ["name"],
+        },
       ],
     });
 
@@ -1193,7 +1225,7 @@ exports.getAdminCars = async (req, res) => {
       return {
         id: car.id,
         carNo: car.CarDocument?.rc_number || "",
-        name: `${car.make || ""} ${car.model || ""}`.trim(),
+        name: `${car.CarMake?.name || ""} ${car.CarModel?.name || ""}`,
         type: car.CarDocument?.registration_type || "",
         price: Number(car.price_per_hour) || 0,
         status,
@@ -1223,8 +1255,8 @@ exports.adminEditCar = async (req, res) => {
     const { id } = req.params; // ✅ get car_id from params
 
     const {
-      make,
-      model,
+      make_id,
+      model_id,
       year,
       price_per_hour,
       kms_driven,
@@ -1259,8 +1291,6 @@ exports.adminEditCar = async (req, res) => {
     // ✅ Step 2: Update main Car table
     await car.update(
       {
-        make,
-        model,
         year,
         price_per_hour,
         kms_driven,

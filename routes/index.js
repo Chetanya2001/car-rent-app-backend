@@ -11,5 +11,7 @@ router.use("/user-document", require("./userDocument.routes"));
 router.use("/car-standards", require("./carStandard.routes"));
 router.use("/self-drive-bookings", require("./selfDriveBooking.routes"));
 router.use("/intercity-bookings", require("./intercityBooking.routes"));
+router.use("car-makes", require("./carMake.routes"));
+router.use("/car-models", require("./carModels.routes"));
 
 module.exports = router;
