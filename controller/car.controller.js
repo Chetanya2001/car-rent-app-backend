@@ -615,12 +615,11 @@ exports.deleteCarLocation = async (req, res) => {
 
 exports.getCars = async (req, res) => {
   try {
-    // Step 1: Fetch all cars
     const cars = await Car.findAll({
       attributes: [
         "id",
         "make_id",
-        "model",
+        "model_id",
         "year",
         "price_per_hour",
         "price_per_km",
@@ -632,10 +631,8 @@ exports.getCars = async (req, res) => {
       raw: true,
     });
 
-    // Step 2: Collect all car IDs
     const carIds = cars.map((car) => car.id);
 
-    // Step 3: Fetch photos for all cars (first photo per car)
     const photos = await CarPhoto.findAll({
       where: { car_id: carIds },
       attributes: ["car_id", "photo_url"],
@@ -643,25 +640,23 @@ exports.getCars = async (req, res) => {
       raw: true,
     });
 
-    // Step 4: Fetch documents for all cars
     const documents = await CarDocument.findAll({
       where: { car_id: carIds },
       attributes: ["car_id", "city_of_registration"],
       raw: true,
     });
 
-    // Step 5: Combine data
     const formattedCars = cars.map((car) => {
       const photo = photos.find((p) => p.car_id === car.id);
       const doc = documents.find((d) => d.car_id === car.id);
 
       return {
         id: car.id,
-        name: car.model.name,
-        brand: car.make.name,
+        name: car["model.name"] || "",
+        brand: car["make.name"] || "",
         year: car.year,
-        price_per_hour: parseFloat(car.price_per_hour) || 0,
-        price_per_km: parseFloat(car.price_per_km) || 0,
+        price_per_hour: Number(car.price_per_hour) || 0,
+        price_per_km: Number(car.price_per_km) || 0,
         image: photo ? photo.photo_url : null,
         location: doc ? doc.city_of_registration : "Not specified",
       };
