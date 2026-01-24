@@ -3,13 +3,19 @@ module.exports = (sequelize) => {
   const Car = sequelize.define(
     "Car",
     {
-      make: {
-        type: DataTypes.STRING,
+      make_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
       },
-      model: {
-        type: DataTypes.STRING,
+
+      model_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
+      },
+
+      variant_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       year: {
         type: DataTypes.INTEGER,
@@ -31,7 +37,7 @@ module.exports = (sequelize) => {
           "approved",
           "rejected",
           "active",
-          "inactive"
+          "inactive",
         ),
         defaultValue: "pending", // ✅ default when new car is added
       },
@@ -76,7 +82,7 @@ module.exports = (sequelize) => {
         defaultValue: null,
       },
     },
-    { timestamps: true }
+    { timestamps: true },
   );
 
   Car.associate = (models) => {
@@ -87,7 +93,12 @@ module.exports = (sequelize) => {
     Car.hasMany(models.CarPhoto, { foreignKey: "car_id", as: "photos" });
     Car.hasOne(models.CarFeatures, { foreignKey: "car_id", as: "features" });
     Car.hasOne(models.CarStandards, { foreignKey: "car_id", as: "standards" });
+    Car.belongsTo(models.CarMake, { foreignKey: "make_id", as: "make" });
+    Car.belongsTo(models.CarModel, { foreignKey: "model_id", as: "model" });
+    Car.belongsTo(models.CarVariant, {
+      foreignKey: "variant_id",
+      as: "variant",
+    });
   };
-
   return Car;
 };

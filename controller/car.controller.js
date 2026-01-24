@@ -8,7 +8,7 @@ const {
   User,
   CarFeatures,
   SelfDriveBooking,
-  IntercityBOoking,
+  IntercityBooking,
 } = require("../models");
 const { mapSelfDriveCapabilities } = require("../utils/carPolicy");
 
@@ -344,7 +344,7 @@ exports.addImage = async (req, res) => {
           car_id,
           photo_url: s3Url, // <-- use photo_url to match your DB column
         };
-      })
+      }),
     );
 
     await CarPhoto.bulkCreate(carPhotos);
@@ -443,20 +443,36 @@ exports.deleteCar = async (req, res) => {
 
     const now = new Date();
 
-    // 🔍 1. Check for ACTIVE or FUTURE bookings
+    // 🔍 1. Check ACTIVE or FUTURE bookings
     const activeOrFutureBooking = await Booking.findOne({
       where: {
         car_id,
         status: {
           [Op.in]: ["initiated", "booked"],
         },
-        end_datetime: {
-          [Op.gte]: now,
-        },
       },
+      include: [
+        {
+          model: SelfDriveBooking,
+          required: false,
+          where: {
+            end_datetime: {
+              [Op.gte]: now,
+            },
+          },
+        },
+        {
+          model: IntercityBooking,
+          required: false,
+        },
+      ],
     });
 
-    if (activeOrFutureBooking) {
+    if (
+      activeOrFutureBooking &&
+      (activeOrFutureBooking.SelfDriveBooking ||
+        activeOrFutureBooking.IntercityBooking)
+    ) {
       return res.status(409).json({
         status: "blocked",
         message:
@@ -464,44 +480,29 @@ exports.deleteCar = async (req, res) => {
       });
     }
 
-    // 🔍 2. Check if ANY booking exists (past)
-    const anyPastBooking = await Booking.findOne({
-      where: {
-        car_id,
-      },
+    // 🔍 2. Check if ANY booking exists (past or completed)
+    const anyBooking = await Booking.findOne({
+      where: { car_id },
     });
 
-    // 🟡 Past booking exists → Make car invisible
-    if (anyPastBooking) {
+    // 🟡 Past bookings exist → Soft hide
+    if (anyBooking) {
       await Car.update({ is_visible: false }, { where: { id: car_id } });
 
       return res.status(200).json({
         status: "hidden",
         message:
-          "Car has past bookings, so it has been made invisible instead of deleting",
+          "Car has booking history, so it has been hidden instead of deleted",
       });
     }
 
     // ✅ 3. No bookings at all → FULL DELETE
-    console.log("Deleting CarPhotos for car_id:", car_id);
     await CarPhoto.destroy({ where: { car_id } });
-
-    console.log("Deleting CarDocuments for car_id:", car_id);
     await CarDocument.destroy({ where: { car_id } });
-
-    console.log("Deleting CarFeatures for car_id:", car_id);
     await CarFeatures.destroy({ where: { car_id } });
-
-    console.log("Deleting CarStandards for car_id:", car_id);
     await CarStandards.destroy({ where: { car_id } });
-
-    console.log("Deleting CarLocation for car_id:", car_id);
     await CarLocation.destroy({ where: { car_id } });
-
-    console.log("Deleting Car for id:", car_id);
     await Car.destroy({ where: { id: car_id } });
-
-    console.log("All deletions done. Sending success response.");
 
     return res.status(200).json({
       status: "deleted",
@@ -919,8 +920,11 @@ exports.searchCars = async (req, res) => {
         {
           model: CarPhoto,
           as: "photos",
-          required: false,
         },
+      ],
+      order: [
+        ["createdAt", "DESC"],
+        [{ model: CarPhoto, as: "photos" }, "id", "ASC"],
       ],
     });
 
@@ -1029,10 +1033,10 @@ exports.searchIntercityCars = async (req, res) => {
         {
           model: CarPhoto,
           as: "photos",
-          attributes: ["photo_url"],
           required: false,
         },
       ],
+      order: [[{ model: CarPhoto, as: "photos" }, "id", "ASC"]],
     });
 
     /* ---------------- RESPONSE ---------------- */
@@ -1263,7 +1267,7 @@ exports.adminEditCar = async (req, res) => {
         available_from,
         available_till,
       },
-      { transaction: t }
+      { transaction: t },
     );
 
     // ✅ Step 3: Update or Create CarDocument
@@ -1280,7 +1284,7 @@ exports.adminEditCar = async (req, res) => {
           insurance_idv_value,
           insurance_valid_till,
         },
-        { transaction: t }
+        { transaction: t },
       );
     } else {
       carDoc = await CarDocument.create(
@@ -1295,7 +1299,7 @@ exports.adminEditCar = async (req, res) => {
           insurance_idv_value,
           insurance_valid_till,
         },
-        { transaction: t }
+        { transaction: t },
       );
     }
 
@@ -1304,7 +1308,7 @@ exports.adminEditCar = async (req, res) => {
     if (carStandard) {
       await carStandard.update(
         { seats, fuel, mileage, transmission },
-        { transaction: t }
+        { transaction: t },
       );
     } else {
       carStandard = await CarStandards.create(
@@ -1315,7 +1319,7 @@ exports.adminEditCar = async (req, res) => {
           mileage,
           transmission,
         },
-        { transaction: t }
+        { transaction: t },
       );
     }
 
