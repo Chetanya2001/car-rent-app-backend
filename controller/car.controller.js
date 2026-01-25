@@ -946,6 +946,7 @@ exports.searchCars = async (req, res) => {
       year: car.year,
       price_per_hour: car.price_per_hour,
       pickup_location: car.CarLocation,
+      capabilities: mapSelfDriveCapabilities(car),
       photos: car.photos?.map((p) => p.photo_url) || [],
     }));
 
