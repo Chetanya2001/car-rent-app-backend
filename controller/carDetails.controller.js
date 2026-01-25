@@ -170,8 +170,6 @@ exports.updateCarDetails = async (req, res) => {
 
     // Update Car table fields
     const carUpdates = {};
-    if (make !== undefined) carUpdates.make = make;
-    if (model !== undefined) carUpdates.model = model;
     if (year !== undefined) carUpdates.year = year;
     if (description !== undefined) carUpdates.description = description;
     if (price_per_hour !== undefined) {
