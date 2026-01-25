@@ -5,6 +5,8 @@ const {
   SelfDriveBooking,
   IntercityBooking,
   CarPhoto,
+  CarMake,
+  CarModel,
 } = require("../models");
 
 /**
@@ -28,6 +30,16 @@ exports.getGuestBookings = async (req, res) => {
               model: CarPhoto,
               as: "photos",
               seperate: true,
+            },
+            {
+              model: CarMake,
+              as: "make",
+              attributes: ["name"],
+            },
+            {
+              model: CarModel,
+              as: "model",
+              attributes: ["name"],
             },
           ],
         },
@@ -58,7 +70,11 @@ exports.getHostBookings = async (req, res) => {
           model: Car,
           where: { host_id: req.user.id },
           required: true,
-          include: [{ model: CarPhoto, as: "photos", seperate: true }],
+          include: [
+            { model: CarPhoto, as: "photos", seperate: true },
+            { model: CarMake, as: "make", attributes: ["name"] },
+            { model: CarModel, as: "model", attributes: ["name"] },
+          ],
         },
         SelfDriveBooking,
         IntercityBooking,
