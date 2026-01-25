@@ -4,7 +4,7 @@ const carModelController = require("../controller/carModel.controller");
 const { verifyToken, checkRole } = require("../middleware/authmiddleware");
 
 // PUBLIC
-router.get("/", carModelController.getModelsByMake);
+router.get("/:make_id", carModelController.getModelsByMake);
 
 // ADMIN
 router.post(
