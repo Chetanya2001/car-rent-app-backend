@@ -25,7 +25,6 @@ exports.addCar = async (req, res) => {
     const car = await Car.create({
       make_id,
       model_id,
-      variant_id,
       year,
       description,
       host_id,
@@ -1131,8 +1130,8 @@ exports.getCarsByHostId = async (req, res) => {
 
     const formattedCars = cars.map((car) => ({
       id: car.id,
-      make: car["make.name"],
-      model: car["model.name"],
+      make: car.make?.name || null,
+      model: car.model?.name || null,
       year: car.year,
       price_per_hour: parseFloat(car.price_per_hour),
       price_per_km: parseFloat(car.price_per_km),
