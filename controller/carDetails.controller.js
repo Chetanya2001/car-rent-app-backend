@@ -1,4 +1,11 @@
-const { Car, CarFeatures, CarPhoto, CarDocument } = require("../models");
+const {
+  Car,
+  CarFeatures,
+  CarPhoto,
+  CarDocument,
+  CarMake,
+  CarModel,
+} = require("../models");
 const { uploadToS3 } = require("../utils/s3Upload");
 
 // Get Car Details (with pricing, insurance, features + images)
@@ -14,18 +21,27 @@ exports.getCarDetails = async (req, res) => {
       where: { id: car_id },
       attributes: [
         "id",
-        "make",
-        "model",
         "year",
         "description",
         "host_id",
         "price_per_hour",
-        "available_from",
         "price_per_km",
+        "available_from",
         "available_till",
         "kms_driven",
+        "is_visible",
       ],
       include: [
+        {
+          model: CarMake,
+          as: "make",
+          attributes: ["name"],
+        },
+        {
+          model: CarModel,
+          as: "model",
+          attributes: ["name"],
+        },
         {
           model: CarFeatures,
           as: "features",
@@ -69,11 +85,10 @@ exports.getCarDetails = async (req, res) => {
       return res.status(404).json({ message: "Car not found" });
     }
 
-    // Structured clean response
     const response = {
       id: car.id,
-      make: car.make,
-      model: car.model,
+      make: car.make?.name || null, // only name
+      model: car.model?.name || null, // only name
       year: car.year,
       description: car.description || "",
       host_id: car.host_id,
@@ -84,26 +99,9 @@ exports.getCarDetails = async (req, res) => {
       available_from: car.available_from,
       available_till: car.available_till,
       kms_driven: car.kms_driven || 0,
+      is_visible: car.is_visible,
 
-      features: car.features
-        ? {
-            airconditions: car.features.airconditions,
-            child_seat: car.features.child_seat,
-            gps: car.features.gps,
-            luggage: car.features.luggage,
-            music: car.features.music,
-            seat_belt: car.features.seat_belt,
-            sleeping_bed: car.features.sleeping_bed,
-            water: car.features.water,
-            bluetooth: car.features.bluetooth,
-            onboard_computer: car.features.onboard_computer,
-            audio_input: car.features.audio_input,
-            long_term_trips: car.features.long_term_trips,
-            car_kit: car.features.car_kit,
-            remote_central_locking: car.features.remote_central_locking,
-            climate_control: car.features.climate_control,
-          }
-        : {},
+      features: car.features || {},
 
       photos:
         car.photos?.map((p) => ({ id: p.id, photo_url: p.photo_url })) || [],
@@ -120,16 +118,15 @@ exports.getCarDetails = async (req, res) => {
         : null,
     };
 
-    res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (error) {
     console.error("Error in getCarDetails:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Error fetching car details",
       error: error.message,
     });
   }
 };
-
 // Update Car Details + Pricing + Insurance (Owner Host Only)
 exports.updateCarDetails = async (req, res) => {
   console.log("=== UPDATE CAR DETAILS CALLED ===");
@@ -142,8 +139,6 @@ exports.updateCarDetails = async (req, res) => {
     const host_id = req.user.id;
     const {
       car_id,
-      make,
-      model,
       year,
       description,
       price_per_hour,
