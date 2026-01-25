@@ -858,7 +858,6 @@ exports.searchCars = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // ✅ Normalize datetime (IST safe)
     const pickup = new Date(pickup_datetime);
     const dropoff = new Date(dropoff_datetime);
 
@@ -866,21 +865,40 @@ exports.searchCars = async (req, res) => {
       return res.status(400).json({ message: "Dropoff must be after pickup" });
     }
 
-    const pickupStr = pickup.toISOString().slice(0, 19).replace("T", " ");
-    const dropoffStr = dropoff.toISOString().slice(0, 19).replace("T", " ");
+    const pickupStr = pickup.toISOString();
+    const dropoffStr = dropoff.toISOString();
 
     const { latitude, longitude } = pickup_location;
 
     const cars = await Car.findAll({
       where: {
         car_mode: { [Op.in]: ["selfdrive", "both"] },
+        status: "active",
         available_from: { [Op.lte]: pickupStr },
         available_till: { [Op.gte]: dropoffStr },
-        status: "active",
+
+        // 🔴 THIS IS THE FIX
+        [Op.and]: Sequelize.literal(`
+          NOT EXISTS (
+            SELECT 1
+            FROM Bookings b
+            INNER JOIN SelfDriveBookings sdb
+              ON sdb.booking_id = b.id
+            WHERE b.car_id = Car.id
+              AND b.booking_type = 'SELF_DRIVE'
+              AND b.status IN ('initiated', 'booked')
+              AND (
+                (sdb.start_datetime <= '${pickupStr}' AND sdb.end_datetime >= '${pickupStr}')
+                OR
+                (sdb.start_datetime <= '${dropoffStr}' AND sdb.end_datetime >= '${dropoffStr}')
+                OR
+                (sdb.start_datetime >= '${pickupStr}' AND sdb.end_datetime <= '${dropoffStr}')
+              )
+          )
+        `),
       },
 
       include: [
-        // 📍 LOCATION (distance filter)
         {
           model: CarLocation,
           required: true,
@@ -898,54 +916,14 @@ exports.searchCars = async (req, res) => {
           `),
         },
 
-        // ❌ BOOKING OVERLAP BLOCK (LEFT JOIN)
-        {
-          model: Booking,
-          required: false,
-          where: {
-            booking_type: "SELF_DRIVE",
-            status: { [Op.in]: ["initiated", "booked"] },
-          },
-          include: [
-            {
-              model: SelfDriveBooking,
-              required: false,
-              where: {
-                [Op.or]: [
-                  {
-                    start_datetime: {
-                      [Op.between]: [pickupStr, dropoffStr],
-                    },
-                  },
-                  {
-                    end_datetime: {
-                      [Op.between]: [pickupStr, dropoffStr],
-                    },
-                  },
-                  {
-                    start_datetime: { [Op.lte]: pickupStr },
-                    end_datetime: { [Op.gte]: dropoffStr },
-                  },
-                ],
-              },
-            },
-          ],
-        },
+        { model: CarDocument, required: false },
 
-        // 📄 DOCUMENTS (DON’T KILL ROWS)
-        {
-          model: CarDocument,
-          required: false,
-        },
-
-        // 📸 PHOTOS
         {
           model: CarPhoto,
           as: "photos",
           required: false,
         },
 
-        // 🚗 MAKE + MODEL (NAME ONLY)
         {
           model: CarMake,
           as: "make",
@@ -957,13 +935,6 @@ exports.searchCars = async (req, res) => {
           attributes: ["name"],
         },
       ],
-
-      // ✅ FILTER OUT BOOKED CARS
-      having: Sequelize.literal(`
-        COUNT(\`Bookings->SelfDriveBookings\`.\`id\`) = 0
-      `),
-
-      group: ["Car.id"],
 
       order: [["createdAt", "DESC"]],
     });
