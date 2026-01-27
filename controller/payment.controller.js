@@ -1,4 +1,4 @@
-const razorpay = require("../config/razorpay");
+// const razorpay = require("../services/razorpay.service");
 const { sequelize, Booking, Payment } = require("../models");
 
 exports.createOrder = async (req, res) => {
