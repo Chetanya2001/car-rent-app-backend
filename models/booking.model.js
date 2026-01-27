@@ -10,18 +10,34 @@ module.exports = (sequelize) => {
       },
 
       status: {
-        type: DataTypes.ENUM("initiated", "booked", "cancelled", "completed"),
+        type: DataTypes.ENUM("CONFIRMED", "ACTIVE", "COMPLETED", "CANCELLED"),
         allowNull: false,
-        defaultValue: "initiated",
+        defaultValue: "CONFIRMED",
       },
 
       total_amount: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+
+      paid_amount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
         defaultValue: 0,
       },
+
+      payment_status: {
+        type: DataTypes.ENUM("PAID", "REFUNDED"),
+        allowNull: false,
+        defaultValue: "PAID",
+      },
+
+      cancelled_reason: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
-    { timestamps: true }
+    { timestamps: true },
   );
 
   Booking.associate = (models) => {

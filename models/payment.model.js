@@ -1,20 +1,42 @@
 const { DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
-  const Payment = sequelize.define(
-    "Payment",
-    {
-      amount: DataTypes.DECIMAL(10, 2),
-      payment_method: { type: DataTypes.ENUM("upi", "card", "cash") },
-      transaction_id: DataTypes.STRING,
-      status: { type: DataTypes.ENUM("pending", "completed", "failed") },
+  const Payment = sequelize.define("Payment", {
+    booking_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
-    { timestamps: true }
-  );
 
-  Payment.associate = (models) => {
-    Payment.belongsTo(models.Booking, { foreignKey: "booking_id" });
-  };
+    amount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+
+    currency: {
+      type: DataTypes.STRING,
+      defaultValue: "INR",
+    },
+
+    payment_method: {
+      type: DataTypes.ENUM("ZERO_RS", "RAZORPAY"),
+      allowNull: false,
+    },
+
+    payment_gateway_order_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    payment_gateway_payment_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    status: {
+      type: DataTypes.ENUM("SUCCESS", "FAILED"),
+      allowNull: false,
+    },
+  });
 
   return Payment;
 };
