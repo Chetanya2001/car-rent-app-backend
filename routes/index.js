@@ -13,6 +13,6 @@ router.use("/self-drive-bookings", require("./selfDriveBooking.routes"));
 router.use("/intercity-bookings", require("./intercityBooking.routes"));
 router.use("/car-makes", require("./carMake.routes"));
 router.use("/car-models", require("./carModels.routes"));
-router.use("/payments", require("./"));
+router.use("/payments", require("./payment.routes"));
 
 module.exports = router;
