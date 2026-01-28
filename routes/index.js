@@ -14,5 +14,6 @@ router.use("/intercity-bookings", require("./intercityBooking.routes"));
 router.use("/car-makes", require("./carMake.routes"));
 router.use("/car-models", require("./carModels.routes"));
 router.use("/payments", require("./payment.routes"));
+router.use("/booking-otp", require("./bookingOTP.routes"));
 
 module.exports = router;
