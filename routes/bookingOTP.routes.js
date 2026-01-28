@@ -4,7 +4,6 @@ const bookingOtpController = require("../controller/bookingOTP.controller");
 const { verifyToken } = require("../middleware/authmiddleware");
 
 // 🔐 Protected routes
-router.post("/generate", verifyToken, bookingOtpController.generateBookingOTP);
 router.post("/verify", verifyToken, bookingOtpController.verifyBookingOTP);
 router.post("/resend", verifyToken, bookingOtpController.resendBookingOTP);
 

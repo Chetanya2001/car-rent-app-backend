@@ -36,3 +36,18 @@ exports.sendBookingEmails = async ({ guest, host, booking }) => {
     transporter.sendMail(hostMail),
   ]);
 };
+exports.sendPickupOtpMail = async (email, otp, bookingId) => {
+  const subject = "Pickup OTP - Zipdrive";
+  const html = `
+    <h2>Pickup OTP</h2>
+    <p>Booking ID: <strong>${bookingId}</strong></p>
+    <p>OTP: <strong style="font-size:20px">${otp}</strong></p>
+    <p>Share this OTP with the guest at pickup.</p>
+  `;
+
+  await transporter.sendMail({
+    to: email,
+    subject,
+    html,
+  });
+};

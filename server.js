@@ -1,4 +1,5 @@
 const express = require("express");
+
 const dotenv = require("dotenv");
 const cors = require("cors");
 const db = require("./models");
@@ -13,6 +14,7 @@ app.use(express.json());
 app.get("/", (req, res) => res.send("Car Rental API Running 🚗"));
 app.use("/api", routes);
 // Sync DB
+require("./jobs/pickupOTP.job");
 db.sequelize.sync({ force: false }).then(() => {
   console.log("✅ Database synced");
 });
@@ -20,5 +22,5 @@ db.sequelize.sync({ force: false }).then(() => {
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () =>
-  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`🚀 Server running on port ${PORT}`),
 );
