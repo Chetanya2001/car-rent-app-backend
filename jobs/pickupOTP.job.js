@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const { Booking, User } = require("../models");
 const { createPickupOtp } = require("../services/bookingOTP.service");
-const { sendPickupOtpMail } = require("../services/mail.service");
+const { sendPickupOtpMail } = require("../services/booking-mail.service");
 const { Op } = require("sequelize");
 
 cron.schedule("* * * * *", async () => {
