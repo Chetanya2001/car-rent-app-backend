@@ -1,26 +1,32 @@
 const cron = require("node-cron");
-const { Booking, User } = require("../models");
-const { createPickupOtp } = require("../services/bookingOTP.service");
-const { sendPickupOtpMail } = require("../services/booking-mail.service");
+const { Booking } = require("../models");
 const { Op } = require("sequelize");
+const { createPickupOtp } = require("../services/bookingOTP.service");
+const { sendPickupOtpToHost } = require("../services/booking-mail.service");
+
+console.log("🟢 Pickup OTP cron loaded");
 
 cron.schedule("* * * * *", async () => {
-  const now = new Date();
-  const from = new Date(now.getTime() + 30 * 60 * 1000);
-  const to = new Date(now.getTime() + 32 * 60 * 1000);
+  try {
+    const now = new Date();
+    const from = new Date(now.getTime() + 30 * 60 * 1000);
+    const to = new Date(now.getTime() + 32 * 60 * 1000);
 
-  const bookings = await Booking.findAll({
-    where: {
-      status: "CONFIRMED",
-      pickup_datetime: { [Op.between]: [from, to] },
-    },
-    include: [{ model: User, as: "host" }],
-  });
+    const bookings = await Booking.findAll({
+      where: {
+        status: "CONFIRMED",
+        booking_type: "SELF_DRIVE",
+      },
+    });
 
-  for (const booking of bookings) {
-    const otp = await createPickupOtp(booking);
-    if (!otp) continue;
+    for (const booking of bookings) {
+      const otp = await createPickupOtp(booking);
 
-    await sendPickupOtpMail(booking.host.email, otp, booking.id);
+      if (otp) {
+        await sendPickupOtpToHost(booking.id, otp);
+      }
+    }
+  } catch (err) {
+    console.error("❌ Pickup OTP cron error:", err);
   }
 });
