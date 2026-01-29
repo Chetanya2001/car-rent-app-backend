@@ -886,7 +886,7 @@ exports.searchCars = async (req, res) => {
               ON sdb.booking_id = b.id
             WHERE b.car_id = Car.id
               AND b.booking_type = 'SELF_DRIVE'
-              AND b.status IN ('CONFIRMED')
+              AND b.status IN ('CONFIRMED',"ACTIVE")
               AND (
                 (sdb.start_datetime <= '${pickupStr}' AND sdb.end_datetime >= '${pickupStr}')
                 OR
@@ -1007,7 +1007,7 @@ exports.searchIntercityCars = async (req, res) => {
               INNER JOIN IntercityBookings ib
                 ON ib.booking_id = b.id
               WHERE b.booking_type = 'INTERCITY'
-                AND b.status IN ('CONFIRMED')
+                AND b.status IN ('CONFIRMED', "ACTIVE")
                 AND b.createdAt BETWEEN
                   '${blockStart.toISOString()}'
                   AND
