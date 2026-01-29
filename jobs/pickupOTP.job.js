@@ -43,14 +43,18 @@ cron.schedule("* * * * *", async () => {
         },
       ],
     });
-    console.log({
-      bookingId: bookings.id,
-      guest: bookings.guest?.email,
-      host: bookings.Car?.host?.email,
-    });
 
     for (const booking of bookings) {
       const otp = await createPickupOtp(booking);
+      for (const booking of bookings) {
+        console.log("🔍 DEBUG BOOKING:", {
+          id: booking.id,
+          guestEmail: booking.guest?.email,
+          hostEmail: booking.Car?.host?.email,
+          start: booking.SelfDriveBooking?.start_datetime,
+        });
+      }
+
       if (!otp) continue;
 
       const guestEmail = booking.guest?.email;
