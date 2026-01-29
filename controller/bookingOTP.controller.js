@@ -1,7 +1,5 @@
 const { Booking, BookingOTP } = require("../models");
-const { generateOTP } = require("../utils/otp.util");
 const { Op } = require("sequelize");
-
 
 /**
  * VERIFY OTP

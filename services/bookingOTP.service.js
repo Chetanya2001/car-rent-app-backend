@@ -1,4 +1,5 @@
 const { BookingOTP, SelfDriveBooking, IntercityBooking } = require("../models");
+
 const { generateOTP } = require("../utils/otp.util");
 
 exports.createPickupOtp = async (booking) => {
