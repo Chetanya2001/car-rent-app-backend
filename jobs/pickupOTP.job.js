@@ -20,13 +20,10 @@ console.log("🟢 Pickup OTP cron loaded – running every minute");
 cron.schedule("* * * * *", async () => {
   const now = new Date();
 
-  console.log("⏰ Cron started at IST:", toIST(now));
-
   try {
     const windowEnd = new Date(now.getTime() + 30 * 60 * 1000);
 
     console.log("Looking for pickups starting between IST:");
-    console.log(`  ${toIST(now)}  →  ${toIST(windowEnd)}`);
 
     const bookings = await Booking.findAll({
       where: {
@@ -39,8 +36,8 @@ cron.schedule("* * * * *", async () => {
           required: true,
           where: {
             start_datetime: {
-              [Op.gte]: now,
-              [Op.lte]: windowEnd,
+              [Op.gte]: toIST(now),
+              [Op.lte]: toIST(windowEnd),
             },
           },
         },
@@ -75,7 +72,7 @@ cron.schedule("* * * * *", async () => {
         include: [
           {
             model: SelfDriveBooking,
-            where: { start_datetime: { [Op.gt]: now } },
+            where: { start_datetime: { [Op.gt]: toIST(now) } },
             required: true,
           },
         ],
@@ -100,7 +97,7 @@ cron.schedule("* * * * *", async () => {
 
     for (const booking of bookings) {
       const bookingId = booking.id;
-      const startTimeIST = toIST(booking.SelfDriveBooking.start_datetime);
+      const startTimeIST = booking.SelfDriveBooking.start_datetime;
       const guestEmail = booking.guest?.email?.trim();
       const hostEmail = booking.Car?.host?.email?.trim();
 
