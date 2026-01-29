@@ -4,7 +4,7 @@ const { Op } = require("sequelize");
 const { createPickupOtp } = require("../services/bookingOTP.service");
 const { sendPickupOtpMail } = require("../services/booking-mail.service");
 
-// Helper to format dates in IST (Asia/Kolkata)
+// Helper to format dates in IST (for readable logs)
 function formatIST(date) {
   if (!date) return "missing";
   return date.toLocaleString("en-IN", {
@@ -21,16 +21,14 @@ cron.schedule("* * * * *", async () => {
   const now = new Date();
 
   console.log("⏰ Pickup OTP cron started");
-  console.log(`   Server time (UTC): ${now.toISOString()}`);
-  console.log(`   Local IST time:    ${formatIST(now)}`);
+  console.log(`   UTC: ${now.toISOString()}`);
+  console.log(`   IST: ${formatIST(now)}`);
 
   try {
-    // Window: bookings starting in the next 30 minutes
-    const windowEnd = new Date(now.getTime() + 30 * 60 * 1000);
+    // KEY CHANGE: Look for bookings where pickup STARTS in the next 0–30 minutes
+    const windowEnd = new Date(now.getTime() + 30 * 60 * 1000); // now + 30 min
 
-    console.log(
-      "Searching for SELF_DRIVE + CONFIRMED bookings starting between:",
-    );
+    console.log("Looking for bookings where pickup STARTS between:");
     console.log(`  UTC:   ${now.toISOString()}  →  ${windowEnd.toISOString()}`);
     console.log(`  IST:   ${formatIST(now)}     →  ${formatIST(windowEnd)}`);
 
@@ -45,8 +43,8 @@ cron.schedule("* * * * *", async () => {
           required: true,
           where: {
             start_datetime: {
-              [Op.gt]: now,
-              [Op.lte]: windowEnd,
+              [Op.gte]: now, // ← changed from Op.gt (include exactly now)
+              [Op.lte]: windowEnd, // pickup starts ≤ now + 30 min
             },
           },
         },
@@ -72,24 +70,49 @@ cron.schedule("* * * * *", async () => {
       order: [[{ model: SelfDriveBooking }, "start_datetime", "ASC"]],
     });
 
-    console.log(`→ Found ${bookings.length} eligible booking(s)`);
+    console.log(
+      `→ Found ${bookings.length} booking(s) with pickup in next 30 min`,
+    );
 
     if (bookings.length === 0) {
-      console.log("No bookings need pickup OTP in the next 30 minutes.");
+      // Debug: show next upcoming bookings (remove or comment out later)
+      const upcoming = await Booking.findAll({
+        where: { status: "CONFIRMED", booking_type: "SELF_DRIVE" },
+        include: [
+          {
+            model: SelfDriveBooking,
+            where: { start_datetime: { [Op.gt]: now } },
+            required: true,
+          },
+        ],
+        limit: 3,
+        order: [[SelfDriveBooking, "start_datetime", "ASC"]],
+      });
+
+      if (upcoming.length > 0) {
+        console.log("Next upcoming SELF_DRIVE bookings:");
+        upcoming.forEach((b) => {
+          const st = b.SelfDriveBooking.start_datetime;
+          console.log(
+            ` - #${b.id} | IST: ${formatIST(st)} | UTC: ${st.toISOString()}`,
+          );
+        });
+      } else {
+        console.log("No future SELF_DRIVE CONFIRMED bookings found at all.");
+      }
+
       return;
     }
 
     for (const booking of bookings) {
       const bookingId = booking.id;
-      const startTime = booking.SelfDriveBooking?.start_datetime;
+      const startTime = booking.SelfDriveBooking.start_datetime;
       const guestEmail = booking.guest?.email?.trim();
       const hostEmail = booking.Car?.host?.email?.trim();
 
       console.log(`\n─── Processing booking #${bookingId} ───`);
-      console.log(
-        `  Start time (UTC): ${startTime?.toISOString() || "missing"}`,
-      );
-      console.log(`  Start time (IST): ${formatIST(startTime)}`);
+      console.log(`  Pickup IST: ${formatIST(startTime)}`);
+      console.log(`  Pickup UTC: ${startTime.toISOString()}`);
       console.log(
         `  Guest: ${guestEmail || "missing"} (${booking.guest?.first_name || "?"})`,
       );
@@ -101,55 +124,40 @@ cron.schedule("* * * * *", async () => {
       try {
         otp = await createPickupOtp(booking);
       } catch (err) {
-        console.error(
-          `Error creating OTP for booking #${bookingId}:`,
-          err.message,
-        );
+        console.error(`OTP creation failed for #${bookingId}:`, err.message);
         continue;
       }
 
       if (!otp) {
-        console.log(`→ No new OTP generated (already exists or skipped)`);
+        console.log(`→ Skipped (OTP already exists or not created)`);
         continue;
       }
 
       console.log(`→ OTP generated: ${otp}`);
 
-      // ─── Guest email ───
       if (guestEmail) {
         try {
           await sendPickupOtpMail(guestEmail, otp, bookingId);
-          console.log(`→ OTP email sent to guest → ${guestEmail}`);
+          console.log(`→ Sent to guest: ${guestEmail}`);
         } catch (err) {
-          console.error(
-            `Failed to send OTP email to guest ${guestEmail} (booking #${bookingId}):`,
-            err.message,
-          );
+          console.error(`Guest email failed #${bookingId}:`, err.message);
         }
-      } else {
-        console.log(`→ No valid guest email found`);
       }
 
-      // ─── Host email ───
       if (hostEmail) {
         try {
           await sendPickupOtpMail(hostEmail, otp, bookingId);
-          console.log(`→ OTP email sent to host → ${hostEmail}`);
+          console.log(`→ Sent to host: ${hostEmail}`);
         } catch (err) {
-          console.error(
-            `Failed to send OTP email to host ${hostEmail} (booking #${bookingId}):`,
-            err.message,
-          );
+          console.error(`Host email failed #${bookingId}:`, err.message);
         }
-      } else {
-        console.log(`→ No valid host email found`);
       }
 
-      console.log(`✅ Finished processing booking #${bookingId}`);
+      console.log(`✅ Processed #${bookingId}`);
     }
 
-    console.log("✅ Pickup OTP cron completed successfully");
+    console.log("✅ Cron run completed");
   } catch (err) {
-    console.error("❌ Pickup OTP cron failed:", err.stack || err);
+    console.error("❌ Cron error:", err.stack || err);
   }
 });
