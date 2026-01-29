@@ -43,6 +43,11 @@ cron.schedule("* * * * *", async () => {
         },
       ],
     });
+    console.log({
+      bookingId: bookings.id,
+      guest: bookings.guest?.email,
+      host: bookings.Car?.host?.email,
+    });
 
     for (const booking of bookings) {
       const otp = await createPickupOtp(booking);
