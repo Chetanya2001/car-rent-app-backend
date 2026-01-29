@@ -45,9 +45,24 @@ exports.sendPickupOtpMail = async (email, otp, bookingId) => {
     <p>Share this OTP with the guest at pickup.</p>
   `;
 
-  await transporter.sendMail({
-    to: email,
-    subject,
-    html,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: `"Zip Drive Support" <${process.env.EMAIL_USER}>`, // ← add from here too (good practice)
+      to: email,
+      subject,
+      html,
+    });
+
+    console.log(`[EMAIL SUCCESS] to ${email} for booking ${bookingId}`);
+    console.log("→ Message ID:", info.messageId);
+    console.log("→ Accepted:", info.accepted);
+    console.log("→ Rejected:", info.rejected);
+    console.log("→ Response:", info.response);
+    console.log("→ Full envelope:", JSON.stringify(info.envelope, null, 2));
+
+    return info;
+  } catch (err) {
+    console.error(`[EMAIL FAILED] to ${email}:`, err);
+    throw err;
+  }
 };
