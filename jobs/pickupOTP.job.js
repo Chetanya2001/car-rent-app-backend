@@ -9,8 +9,7 @@ console.log("🟢 Pickup OTP cron loaded");
 cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
-    const from = new Date(now.getTime() + 30 * 60 * 1000);
-    const to = new Date(now.getTime() + 32 * 60 * 1000);
+    const limit = new Date(now.getTime() + 30 * 60 * 1000);
 
     const bookings = await Booking.findAll({
       where: {
@@ -22,7 +21,8 @@ cron.schedule("* * * * *", async () => {
           model: SelfDriveBooking,
           where: {
             start_datetime: {
-              [Op.between]: [from, to],
+              [Op.lte]: limit, // 🔥 KEY CHANGE
+              [Op.gt]: now,
             },
           },
         },
