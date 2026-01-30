@@ -15,7 +15,7 @@ exports.createSelfDriveBooking = async (data) => {
     const startISO = new Date(data.selfDrive.start_datetime).toISOString();
     const endISO = new Date(data.selfDrive.end_datetime).toISOString();
 
-    /* ✅ TIME OVERLAP CONFLICT CHECK */
+    /* -------------------- CONFLICT CHECK -------------------- */
     const [rows] = await sequelize.query(
       `
       SELECT b.id
@@ -46,7 +46,7 @@ exports.createSelfDriveBooking = async (data) => {
       throw new Error("Car already booked in this time range");
     }
 
-    /* ✅ CREATE BOOKING */
+    /* -------------------- CREATE BOOKING -------------------- */
     const booking = await Booking.create(
       {
         guest_id: data.guest_id,
@@ -60,17 +60,17 @@ exports.createSelfDriveBooking = async (data) => {
       { transaction: t },
     );
 
-    /* ✅ SELF DRIVE RECORD */
+    /* -------------------- CREATE SELF DRIVE -------------------- */
     const selfDrive = await SelfDriveBooking.create(
       {
         ...data.selfDrive,
         booking_id: booking.id,
-        total_amount: data.total_amount,
+        total_amount: data.total_amount, // ← fix here
       },
       { transaction: t },
     );
 
-    /* ✅ ZERO PAYMENT */
+    /* -------------------- ZERO PAYMENT -------------------- */
     await Payment.create(
       {
         booking_id: booking.id,

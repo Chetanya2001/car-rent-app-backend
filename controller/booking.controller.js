@@ -17,15 +17,7 @@ exports.getGuestBookings = async (req, res) => {
     const bookings = await Booking.findAll({
       where: { guest_id: req.user.id },
 
-      attributes: [
-        "id",
-        "status",
-        "booking_type",
-        "start_date",
-        "end_date",
-        "total_amount",
-        "createdAt",
-      ],
+      attributes: ["id", "status", "booking_type", "total_amount", "createdAt"],
 
       include: [
         {
