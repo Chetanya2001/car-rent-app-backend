@@ -63,30 +63,34 @@ exports.bookSelfDrive = async (req, res) => {
 
     const [rows] = await sequelize.query(
       `
-      SELECT 1
-      FROM Bookings b
-      INNER JOIN SelfDriveBookings sdb
-        ON sdb.booking_id = b.id
-      WHERE b.car_id = :car_id
-        AND b.booking_type = 'SELF_DRIVE'
-        AND b.status IN ('CONFIRMED','ACTIVE')
-        AND (
-          (sdb.start_datetime <= :pickup AND sdb.end_datetime >= :pickup)
-          OR
-          (sdb.start_datetime <= :dropoff AND sdb.end_datetime >= :dropoff)
-          OR
-          (sdb.start_datetime >= :pickup AND sdb.end_datetime <= :dropoff)
-        )
-      LIMIT 1
-      `,
+  SELECT 1
+  FROM Bookings b
+  INNER JOIN SelfDriveBookings sdb
+    ON sdb.booking_id = b.id
+  WHERE b.car_id = :car_id
+    AND b.booking_type = 'SELF_DRIVE'
+    AND b.status IN ('CONFIRMED','ACTIVE')
+    AND (
+      sdb.start_datetime < :new_end
+      AND
+      sdb.end_datetime   > :new_start
+    )
+  LIMIT 1
+  `,
       {
         replacements: {
           car_id,
-          pickup: pickupISO,
-          dropoff: dropoffISO,
+          new_start: pickupISO,
+          new_end: dropoffISO,
         },
       },
     );
+
+    if (rows.length > 0) {
+      return res.status(409).json({
+        message: "Car is already booked",
+      });
+    }
 
     if (rows.length > 0) {
       return res.status(409).json({
