@@ -136,7 +136,7 @@ exports.getHostBookings = async (req, res) => {
         {
           model: User,
           as: "guest",
-          attributes: ["id", "first_name", "last_name", "phone"],
+          attributes: ["id", "first_name", "last_name", "phone", "email"],
         },
       ],
 
