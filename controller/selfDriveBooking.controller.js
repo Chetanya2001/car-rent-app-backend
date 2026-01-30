@@ -29,14 +29,17 @@ exports.bookSelfDrive = async (req, res) => {
       return res.status(400).json({ message: "Datetime required" });
     }
 
-    const pickup = new Date(start_datetime);
-    const dropoff = new Date(end_datetime);
+    const pickupStr = new Date(start_datetime);
+    const dropoffStr = new Date(end_datetime);
 
-    if (isNaN(pickup) || isNaN(dropoff) || dropoff <= pickup) {
+    if (isNaN(pickupStr) || isNaN(dropoffStr) || dropoffStr <= pickupStr) {
       return res.status(400).json({ message: "Invalid booking time range" });
     }
 
-    const hours = Math.max(1, Math.ceil((dropoff - pickup) / (1000 * 60 * 60)));
+    const hours = Math.max(
+      1,
+      Math.ceil((dropoffStr - pickupStr) / (1000 * 60 * 60)),
+    );
 
     /* -------------------- LOAD MODELS FIRST -------------------- */
 
@@ -55,23 +58,24 @@ exports.bookSelfDrive = async (req, res) => {
     const conflict = await Car.findOne({
       where: {
         id: car_id,
-        id: {
-          [Op.in]: Sequelize.literal(`
-            (
-              SELECT b.car_id
-              FROM Bookings b
-              INNER JOIN SelfDriveBookings sdb
-                ON sdb.booking_id = b.id
-              WHERE b.car_id = ${car_id}
-                AND b.status IN ('CONFIRMED', 'ACTIVE')
-                AND b.booking_type = 'SELF_DRIVE'
-                AND (
-                  sdb.start_datetime < '${dropoff.toISOString()}'
-                  AND sdb.end_datetime > '${pickup.toISOString()}'
-                )
-            )
-          `),
-        },
+        [Op.and]: Sequelize.literal(`
+      EXISTS (
+        SELECT 1
+        FROM Bookings b
+        INNER JOIN SelfDriveBookings sdb
+          ON sdb.booking_id = b.id
+        WHERE b.car_id = ${car_id}
+          AND b.booking_type = 'SELF_DRIVE'
+          AND b.status IN ('CONFIRMED','ACTIVE')
+          AND (
+            (sdb.start_datetime <= '${pickupStr}' AND sdb.end_datetime >= '${pickupStr}')
+            OR
+            (sdb.start_datetime <= '${dropoffStr}' AND sdb.end_datetime >= '${dropoffStr}')
+            OR
+            (sdb.start_datetime >= '${pickupStr}' AND sdb.end_datetime <= '${dropoffStr}')
+          )
+      )
+    `),
       },
     });
 
