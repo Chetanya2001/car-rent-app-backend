@@ -6,6 +6,7 @@ const { sendBookingEmails } = require("../services/booking-mail.service");
 exports.bookSelfDrive = async (req, res) => {
   try {
     const guest_id = req.user.id;
+
     const {
       car_id,
       start_datetime,
@@ -20,29 +21,27 @@ exports.bookSelfDrive = async (req, res) => {
       insure_amount,
       driver_amount,
       drop_charge,
-      base_amount,
-      gst_amount,
     } = req.body;
+
+    /* -------------------- VALIDATE TIME -------------------- */
+
+    if (!start_datetime || !end_datetime) {
+      return res.status(400).json({ message: "Datetime required" });
+    }
 
     const pickup = new Date(start_datetime);
     const dropoff = new Date(end_datetime);
+
     if (isNaN(pickup) || isNaN(dropoff) || dropoff <= pickup) {
       return res.status(400).json({ message: "Invalid booking time range" });
     }
+
     const hours = Math.max(1, Math.ceil((dropoff - pickup) / (1000 * 60 * 60)));
 
-    const hourlyRate = car.price_per_hour;
-
-    const base = hourlyRate * hours;
-    const insurance = insure_amount || 0;
-    const driver = driver_amount || 0;
-    const drop = drop_charge || 0;
-
-    const subtotal = base + insurance + driver + drop;
-    const gst = Math.round(subtotal * 0.18);
-    const total = subtotal + gst;
+    /* -------------------- LOAD MODELS FIRST -------------------- */
 
     const guest = await User.findByPk(guest_id);
+
     const car = await Car.findByPk(car_id, {
       include: [{ model: User, as: "host" }],
     });
@@ -51,9 +50,8 @@ exports.bookSelfDrive = async (req, res) => {
       return res.status(404).json({ message: "Guest or Car not found" });
     }
 
-    /* --------------------------------------------------
-       🚫 BLOCK IF CAR ALREADY BOOKED IN SELECTED TIME
-    -------------------------------------------------- */
+    /* -------------------- CONFLICT CHECK -------------------- */
+
     const conflict = await Car.findOne({
       where: {
         id: car_id,
@@ -84,13 +82,26 @@ exports.bookSelfDrive = async (req, res) => {
       });
     }
 
-    /* --------------------------------------------------
-       ✅ CREATE BOOKING
-    -------------------------------------------------- */
+    /* -------------------- BACKEND PRICING (SOURCE OF TRUTH) -------------------- */
+
+    const hourlyRate = car.price_per_hour;
+
+    const base = hourlyRate * hours;
+    const insurance = insure_amount || 0;
+    const driver = driver_amount || 0;
+    const drop = drop_charge || 0;
+
+    const subtotal = base + insurance + driver + drop;
+    const gst = Math.round(subtotal * 0.18);
+    const total = subtotal + gst;
+
+    /* -------------------- CREATE BOOKING -------------------- */
+
     const result = await bookingService.createSelfDriveBooking({
       guest_id,
       car_id,
       total_amount: total,
+
       selfDrive: {
         start_datetime,
         end_datetime,
@@ -110,16 +121,20 @@ exports.bookSelfDrive = async (req, res) => {
       },
     });
 
+    /* -------------------- EMAILS -------------------- */
+
     await sendBookingEmails({
       guest,
       host: car.host,
       booking: result.booking,
     });
 
+    /* -------------------- RESPONSE -------------------- */
+
     res.status(201).json({
       message: "Self-drive booking created",
       booking: result.booking,
-      selfDrive: result.selfDriveBooking,
+      selfDrive: result.selfDrive,
     });
   } catch (err) {
     console.error(err);
