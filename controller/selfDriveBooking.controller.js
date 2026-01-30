@@ -24,6 +24,11 @@ exports.bookSelfDrive = async (req, res) => {
       gst_amount,
     } = req.body;
 
+    const pickup = new Date(start_datetime);
+    const dropoff = new Date(end_datetime);
+    if (isNaN(pickup) || isNaN(dropoff) || dropoff <= pickup) {
+      return res.status(400).json({ message: "Invalid booking time range" });
+    }
     const hours = Math.max(1, Math.ceil((dropoff - pickup) / (1000 * 60 * 60)));
 
     const hourlyRate = car.price_per_hour;
@@ -36,9 +41,6 @@ exports.bookSelfDrive = async (req, res) => {
     const subtotal = base + insurance + driver + drop;
     const gst = Math.round(subtotal * 0.18);
     const total = subtotal + gst;
-
-    const pickup = new Date(start_datetime);
-    const dropoff = new Date(end_datetime);
 
     const guest = await User.findByPk(guest_id);
     const car = await Car.findByPk(car_id, {
