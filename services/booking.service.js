@@ -12,29 +12,46 @@ const { Op } = require("sequelize");
 ===================================================== */
 exports.createSelfDriveBooking = async (data) => {
   return sequelize.transaction(async (t) => {
-    // 🔒 Prevent double booking (basic lock)
-    const conflict = await Booking.findOne({
-      where: {
-        car_id: data.car_id,
-        status: {
-          [Op.in]: ["CONFIRMED", "ACTIVE"],
-        },
-      },
-      lock: t.LOCK.UPDATE,
-      transaction: t,
-    });
+    const startISO = new Date(data.selfDrive.start_datetime).toISOString();
+    const endISO = new Date(data.selfDrive.end_datetime).toISOString();
 
-    if (conflict) {
-      throw new Error("Car already booked");
+    /* ✅ TIME OVERLAP CONFLICT CHECK */
+    const [rows] = await sequelize.query(
+      `
+      SELECT b.id
+      FROM Bookings b
+      INNER JOIN SelfDriveBookings sdb
+        ON sdb.booking_id = b.id
+      WHERE b.car_id = :car_id
+        AND b.booking_type = 'SELF_DRIVE'
+        AND b.status IN ('CONFIRMED','ACTIVE')
+        AND (
+          sdb.start_datetime < :new_end
+          AND
+          sdb.end_datetime   > :new_start
+        )
+      FOR UPDATE
+      `,
+      {
+        replacements: {
+          car_id: data.car_id,
+          new_start: startISO,
+          new_end: endISO,
+        },
+        transaction: t,
+      },
+    );
+
+    if (rows.length > 0) {
+      throw new Error("Car already booked in this time range");
     }
 
-    // 1️⃣ Create booking (CONFIRMED)
+    /* ✅ CREATE BOOKING */
     const booking = await Booking.create(
       {
         guest_id: data.guest_id,
         car_id: data.car_id,
         booking_type: "SELF_DRIVE",
-
         status: "CONFIRMED",
         total_amount: data.total_amount,
         paid_amount: 0,
@@ -43,7 +60,7 @@ exports.createSelfDriveBooking = async (data) => {
       { transaction: t },
     );
 
-    // 2️⃣ Create self-drive details
+    /* ✅ SELF DRIVE RECORD */
     const selfDrive = await SelfDriveBooking.create(
       {
         ...data.selfDrive,
@@ -52,7 +69,7 @@ exports.createSelfDriveBooking = async (data) => {
       { transaction: t },
     );
 
-    // 3️⃣ Create ZERO payment record
+    /* ✅ ZERO PAYMENT */
     await Payment.create(
       {
         booking_id: booking.id,
