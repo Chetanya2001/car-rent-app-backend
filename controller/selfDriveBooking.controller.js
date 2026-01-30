@@ -1,4 +1,4 @@
-const { User, Car, Sequelize } = require("../models");
+const { User, Car, sequelize } = require("../models");
 const bookingService = require("../services/booking.service");
 const { sendBookingEmails } = require("../services/booking-mail.service");
 
@@ -61,7 +61,7 @@ exports.bookSelfDrive = async (req, res) => {
 
     /* -------------------- CONFLICT CHECK (MATCHES SEARCH LOGIC) -------------------- */
 
-    const [rows] = await Sequelize.query(
+    const [rows] = await sequelize.query(
       `
       SELECT 1
       FROM Bookings b
