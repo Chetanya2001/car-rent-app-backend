@@ -6,10 +6,8 @@ const { sendBookingEmails } = require("../services/booking-mail.service");
 exports.bookSelfDrive = async (req, res) => {
   try {
     const guest_id = req.user.id;
-
     const {
       car_id,
-      total_amount,
       start_datetime,
       end_datetime,
       pickup_address,
@@ -18,8 +16,26 @@ exports.bookSelfDrive = async (req, res) => {
       drop_address,
       drop_lat,
       drop_long,
+
       insure_amount,
+      driver_amount,
+      drop_charge,
+      base_amount,
+      gst_amount,
     } = req.body;
+
+    const hours = Math.max(1, Math.ceil((dropoff - pickup) / (1000 * 60 * 60)));
+
+    const hourlyRate = car.price_per_hour;
+
+    const base = hourlyRate * hours;
+    const insurance = insure_amount || 0;
+    const driver = driver_amount || 0;
+    const drop = drop_charge || 0;
+
+    const subtotal = base + insurance + driver + drop;
+    const gst = Math.round(subtotal * 0.18);
+    const total = subtotal + gst;
 
     const pickup = new Date(start_datetime);
     const dropoff = new Date(end_datetime);
@@ -47,7 +63,7 @@ exports.bookSelfDrive = async (req, res) => {
               INNER JOIN SelfDriveBookings sdb
                 ON sdb.booking_id = b.id
               WHERE b.car_id = ${car_id}
-                AND b.status IN ('initiated', 'booked')
+                AND b.status IN ('CONFIRMED', 'ACTIVE')
                 AND b.booking_type = 'SELF_DRIVE'
                 AND (
                   sdb.start_datetime < '${dropoff.toISOString()}'
@@ -72,7 +88,7 @@ exports.bookSelfDrive = async (req, res) => {
     const result = await bookingService.createSelfDriveBooking({
       guest_id,
       car_id,
-      total_amount,
+      total_amount: total,
       selfDrive: {
         start_datetime,
         end_datetime,
@@ -82,7 +98,13 @@ exports.bookSelfDrive = async (req, res) => {
         drop_address,
         drop_lat,
         drop_long,
-        insure_amount: insure_amount || 0,
+
+        insure_amount: insurance,
+        driver_amount: driver,
+        drop_charge: drop,
+        base_amount: base,
+        gst_amount: gst,
+        hourly_rate_snapshot: hourlyRate,
       },
     });
 

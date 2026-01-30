@@ -40,12 +40,43 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
 
+      // ✅ Pricing breakdown
+      hourly_rate_snapshot: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+
+      base_amount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+
       insure_amount: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
       },
+
+      driver_amount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+
+      drop_charge: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+
+      gst_amount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+
+      total_amount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
     },
-    { timestamps: true }
+    { timestamps: true },
   );
 
   SelfDriveBooking.associate = (models) => {

@@ -16,20 +16,33 @@ exports.getGuestBookings = async (req, res) => {
   try {
     const bookings = await Booking.findAll({
       where: { guest_id: req.user.id },
-      order: [["createdAt", "DESC"]],
+
+      attributes: [
+        "id",
+        "status",
+        "booking_type",
+        "start_date",
+        "end_date",
+        "total_amount",
+        "createdAt",
+      ],
+
       include: [
         {
           model: Car,
+          attributes: ["id"],
           include: [
             {
               model: User,
               as: "host",
-              attributes: ["id", "first_name", "last_name", "email", "phone"],
+              attributes: ["id", "first_name", "last_name", "phone"],
             },
             {
               model: CarPhoto,
               as: "photos",
-              seperate: true,
+              attributes: ["id", "photo_url"],
+              separate: true,
+              order: [["id", "ASC"]],
             },
             {
               model: CarMake,
@@ -43,14 +56,25 @@ exports.getGuestBookings = async (req, res) => {
             },
           ],
         },
+
+        // ✅ Only trip info — NO pricing breakdown
         {
           model: SelfDriveBooking,
+          attributes: [
+            "start_datetime",
+            "end_datetime",
+            "pickup_address",
+            "drop_address",
+          ],
         },
+
         {
           model: IntercityBooking,
+          attributes: ["pickup_address", "drop_address", "distance_km"],
         },
       ],
-      order: [[{ model: Car }, { model: CarPhoto, as: "photos" }, "id", "ASC"]],
+
+      order: [["createdAt", "DESC"]],
     });
 
     res.json(bookings);
@@ -59,6 +83,7 @@ exports.getGuestBookings = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 /**
  * HOST BOOKINGS
  */
@@ -70,20 +95,60 @@ exports.getHostBookings = async (req, res) => {
           model: Car,
           where: { host_id: req.user.id },
           required: true,
+          attributes: ["id"],
+
           include: [
-            { model: CarPhoto, as: "photos", seperate: true },
-            { model: CarMake, as: "make", attributes: ["name"] },
-            { model: CarModel, as: "model", attributes: ["name"] },
+            {
+              model: CarPhoto,
+              as: "photos",
+              attributes: ["id", "photo_url"],
+              separate: true,
+              order: [["id", "ASC"]],
+            },
+            {
+              model: CarMake,
+              as: "make",
+              attributes: ["name"],
+            },
+            {
+              model: CarModel,
+              as: "model",
+              attributes: ["name"],
+            },
           ],
         },
-        SelfDriveBooking,
-        IntercityBooking,
-        { model: User, as: "guest" },
+
+        // ✅ FULL pricing for host
+        {
+          model: SelfDriveBooking,
+          attributes: [
+            "start_datetime",
+            "end_datetime",
+            "pickup_address",
+            "drop_address",
+
+            "base_amount",
+            "insure_amount",
+            "driver_amount",
+            "drop_charge",
+            "gst_amount",
+            "total_amount",
+          ],
+        },
+
+        {
+          model: IntercityBooking,
+          attributes: { exclude: [] }, // full allowed
+        },
+
+        {
+          model: User,
+          as: "guest",
+          attributes: ["id", "first_name", "last_name", "phone"],
+        },
       ],
-      order: [
-        ["createdAt", "DESC"],
-        [{ model: Car }, { model: CarPhoto, as: "photos" }, "id", "ASC"],
-      ],
+
+      order: [["createdAt", "DESC"]],
     });
 
     res.json(bookings);

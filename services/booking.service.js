@@ -5,6 +5,7 @@ const {
   IntercityBooking,
   Payment,
 } = require("../models");
+const { Op } = require("sequelize");
 
 /* =====================================================
    SELF DRIVE BOOKING (ZERO PAYMENT CONFIRM)
@@ -15,7 +16,9 @@ exports.createSelfDriveBooking = async (data) => {
     const conflict = await Booking.findOne({
       where: {
         car_id: data.car_id,
-        status: ["CONFIRMED", "ACTIVE"],
+        status: {
+          [Op.in]: ["CONFIRMED", "ACTIVE"],
+        },
       },
       lock: t.LOCK.UPDATE,
       transaction: t,
@@ -73,7 +76,9 @@ exports.createIntercityBooking = async (data) => {
     const conflict = await Booking.findOne({
       where: {
         car_id: data.car_id,
-        status: ["CONFIRMED", "ACTIVE"],
+        status: {
+          [Op.in]: ["CONFIRMED", "ACTIVE"],
+        },
       },
       lock: t.LOCK.UPDATE,
       transaction: t,
