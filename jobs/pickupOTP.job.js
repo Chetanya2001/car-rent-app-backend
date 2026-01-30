@@ -5,15 +5,6 @@ const { createPickupOtp } = require("../services/bookingOTP.service");
 const { sendPickupOtpMail } = require("../services/booking-mail.service");
 
 // Helper: Format date to readable IST string
-function toIST(date) {
-  if (!date) return "missing";
-  return date.toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    dateStyle: "medium",
-    timeStyle: "medium",
-    hour12: true,
-  });
-}
 
 console.log("🟢 Pickup OTP cron loaded – running every minute");
 
@@ -62,8 +53,6 @@ cron.schedule("* * * * *", async () => {
       ],
       order: [[{ model: SelfDriveBooking }, "start_datetime", "ASC"]],
     });
-
-    console.log(`→ Found ${bookings.length} eligible booking(s)`);
 
     if (bookings.length === 0) {
       // Show next upcoming for debug (in IST only)

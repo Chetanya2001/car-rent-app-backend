@@ -66,3 +66,15 @@ exports.sendPickupOtpMail = async (email, otp, bookingId) => {
     throw err;
   }
 };
+exports.sendDropOtpMail = async (email, otp, bookingId) => {
+  await sendMail({
+    to: email,
+    subject: `Drop OTP for Booking #${bookingId}`,
+    html: `
+      <h2>Booking Drop Verification</h2>
+      <p>Your drop OTP is:</p>
+      <h1>${otp}</h1>
+      <p>Enter this OTP to complete the booking.</p>
+    `,
+  });
+};
