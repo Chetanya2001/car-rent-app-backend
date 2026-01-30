@@ -22,7 +22,7 @@ exports.getGuestBookings = async (req, res) => {
       include: [
         {
           model: Car,
-          attributes: ["id"],
+          attributes: ["id", "description", "year"],
           include: [
             {
               model: User,
