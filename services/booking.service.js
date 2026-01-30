@@ -65,6 +65,7 @@ exports.createSelfDriveBooking = async (data) => {
       {
         ...data.selfDrive,
         booking_id: booking.id,
+        total_amount: data.total_amount,
       },
       { transaction: t },
     );
