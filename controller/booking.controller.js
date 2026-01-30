@@ -87,7 +87,7 @@ exports.getHostBookings = async (req, res) => {
           model: Car,
           where: { host_id: req.user.id },
           required: true,
-          attributes: ["id"],
+          attributes: ["id", "description", "year"],
 
           include: [
             {
