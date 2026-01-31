@@ -214,7 +214,13 @@ exports.getAllUsers = async (req, res) => {
         {
           model: UserDocuments,
           as: "documents",
-          attributes: ["verification_status"],
+          attributes: [
+            "id",
+            "doc_type",
+            "verification_status",
+            "image",
+            "createdAt",
+          ],
           required: false,
         },
       ],
