@@ -67,14 +67,35 @@ exports.sendPickupOtpMail = async (email, otp, bookingId) => {
   }
 };
 exports.sendDropOtpMail = async (email, otp, bookingId) => {
-  await sendMail({
-    to: email,
-    subject: `Drop OTP for Booking #${bookingId}`,
-    html: `
-      <h2>Booking Drop Verification</h2>
-      <p>Your drop OTP is:</p>
-      <h1>${otp}</h1>
-      <p>Enter this OTP to complete the booking.</p>
-    `,
-  });
+  const subject = "Drop OTP - Zipdrive";
+
+  const html = `
+    <h2>Drop OTP Verification</h2>
+    <p>Booking ID: <strong>${bookingId}</strong></p>
+    <p>Your Drop OTP is:</p>
+    <h1 style="font-size:22px; letter-spacing:2px">${otp}</h1>
+    <p>Enter this OTP to complete the booking.</p>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"Zip Drive Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject,
+      html,
+    });
+
+    console.log(
+      `[DROP OTP EMAIL SUCCESS] to ${email} for booking ${bookingId}`,
+    );
+    console.log("→ Message ID:", info.messageId);
+    console.log("→ Accepted:", info.accepted);
+    console.log("→ Rejected:", info.rejected);
+    console.log("→ Response:", info.response);
+
+    return info;
+  } catch (err) {
+    console.error(`[DROP OTP EMAIL FAILED] to ${email}:`, err);
+    throw err;
+  }
 };
