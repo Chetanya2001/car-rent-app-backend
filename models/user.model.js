@@ -21,7 +21,7 @@ module.exports = (sequelize) => {
         allowNull: true,
       },
     },
-    { timestamps: true }
+    { timestamps: true },
   );
 
   User.associate = (models) => {
@@ -30,6 +30,10 @@ module.exports = (sequelize) => {
     User.hasMany(models.Validation, {
       as: "validations",
       foreignKey: "validated_by",
+    });
+    User.hasMany(models.UserDocuments, {
+      as: "documents",
+      foreignKey: "user_id",
     });
     User.hasMany(models.Notification, { foreignKey: "user_id" });
   };
