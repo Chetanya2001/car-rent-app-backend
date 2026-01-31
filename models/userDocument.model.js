@@ -20,7 +20,7 @@ module.exports = (sequelize) => {
           "National ID Card",
           "Voter Card",
           "PAN Card",
-          "Other"
+          "Other",
         ),
         allowNull: false,
       },
@@ -33,8 +33,21 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: "Pending",
       },
+
+      rejection_reason: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
-    { timestamps: true }
+    {
+      timestamps: true,
+      indexes: [
+        {
+          unique: true,
+          fields: ["user_id", "doc_type"], // IMPORTANT
+        },
+      ],
+    },
   );
 
   UserDocuments.associate = (models) => {

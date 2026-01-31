@@ -1,6 +1,9 @@
 const { User, Car, sequelize } = require("../models");
 const bookingService = require("../services/booking.service");
 const { sendBookingEmails } = require("../services/booking-mail.service");
+const {
+  checkEligibilityInternal,
+} = require("../utils/checkUserEligibility.util");
 
 exports.bookSelfDrive = async (req, res) => {
   try {
@@ -36,6 +39,14 @@ exports.bookSelfDrive = async (req, res) => {
       dropoffDate <= pickupDate
     ) {
       return res.status(400).json({ message: "Invalid booking time range" });
+    }
+
+    const eligibility = await checkEligibilityInternal(guest_id);
+
+    if (!eligibility.eligible) {
+      return res.status(403).json({
+        message: "User is not eligible to book a self-drive car",
+      });
     }
 
     const hours = Math.max(

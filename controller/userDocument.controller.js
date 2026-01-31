@@ -1,57 +1,39 @@
 const { UserDocuments, User } = require("../models");
 const { uploadToS3 } = require("../utils/s3Upload"); // Your helper
 
+const REQUIRED_DOCS = ["Aadhaar", "Driver's License"];
+
 exports.uploadDocument = async (req, res) => {
   try {
     const { doc_type } = req.body;
     const user_id = req.user.id;
 
-    const allowedTypes = [
-      "Passport",
-      "Driver's License",
-      "National ID Card",
-      "Voter Card",
-      "PAN Card",
-      "Other",
-    ];
-    if (!allowedTypes.includes(doc_type)) {
-      return res.status(400).json({ message: "Invalid document type" });
-    }
     if (!req.file) {
-      return res.status(400).json({ message: "Image is required" });
+      return res.status(400).json({ message: "Document image is required" });
     }
 
-    // Upload image to S3 and get URL
     const imageUrl = await uploadToS3(req.file);
 
-    // Upsert logic
-    let document = await UserDocuments.findOne({
-      where: { user_id, doc_type },
-    });
-
-    if (document) {
-      // Update existing record
-      await document.update({
-        image: imageUrl,
-        verification_status: "Pending",
-      });
-    } else {
-      // Create new record
-      document = await UserDocuments.create({
+    const [document, created] = await UserDocuments.upsert(
+      {
         user_id,
         doc_type,
         image: imageUrl,
         verification_status: "Pending",
-      });
-    }
+        rejection_reason: null,
+      },
+      { returning: true },
+    );
 
     return res.status(201).json({
-      message: "Document uploaded",
+      message: created
+        ? "Document uploaded successfully"
+        : "Document updated and sent for re-verification",
       document,
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Document upload failed" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Document upload failed" });
   }
 };
 
@@ -66,7 +48,6 @@ exports.getUserDocumentsByUserId = async (req, res) => {
     // Optional: fetch user details if needed
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
-
     const documents = await UserDocuments.findAll({
       where: { user_id: userId },
       attributes: [
@@ -74,6 +55,7 @@ exports.getUserDocumentsByUserId = async (req, res) => {
         "doc_type",
         "image",
         "verification_status",
+        "rejection_reason",
         "createdAt",
         "updatedAt",
       ],
@@ -113,4 +95,92 @@ exports.uploadProfilePic = async (req, res) => {
     console.error(error);
     return res.status(500).json({ message: "Profile picture upload failed" });
   }
+};
+exports.getPendingDocuments = async (req, res) => {
+  const guests = await User.findAll({
+    where: { role: "guest" },
+    include: [
+      {
+        model: UserDocuments,
+        as: "documents",
+        attributes: ["verification_status"],
+      },
+    ],
+  });
+
+  const response = guests.map((g) => {
+    const pending = g.documents.filter(
+      (d) => d.verification_status === "Pending",
+    ).length;
+
+    const verified = g.documents.filter(
+      (d) => d.verification_status === "Verified",
+    ).length;
+
+    return {
+      id: g.id,
+      first_name: g.first_name,
+      last_name: g.last_name,
+      email: g.email,
+      phone: g.phone,
+      hasPendingVerification: pending > 0,
+      pendingDocs: pending,
+      verifiedDocs: verified,
+    };
+  });
+};
+
+exports.verifyDocument = async (req, res) => {
+  const { documentId } = req.params;
+  const { status, rejection_reason } = req.body;
+
+  if (!["Verified", "Rejected"].includes(status)) {
+    return res.status(400).json({ message: "Invalid status" });
+  }
+
+  const document = await UserDocuments.findByPk(documentId);
+  if (!document) return res.status(404).json({ message: "Not found" });
+
+  document.verification_status = status;
+  document.rejection_reason = status === "Rejected" ? rejection_reason : null;
+  await document.save();
+
+  res.json({ message: "Document status updated", document });
+};
+
+exports.checkBookingEligibility = async (req, res) => {
+  const userId = req.user.id;
+
+  const documents = await UserDocuments.findAll({
+    where: {
+      user_id: userId,
+      doc_type: REQUIRED_DOCS,
+    },
+  });
+
+  const docMap = documents.reduce((acc, doc) => {
+    acc[doc.doc_type] = doc.verification_status;
+    return acc;
+  }, {});
+
+  const missingDocs = REQUIRED_DOCS.filter((doc) => !docMap[doc]);
+
+  const unverifiedDocs = REQUIRED_DOCS.filter(
+    (doc) => docMap[doc] !== "Verified",
+  );
+
+  if (missingDocs.length || unverifiedDocs.length) {
+    return res.status(403).json({
+      eligible: false,
+      reason: "DOCUMENT_VERIFICATION_REQUIRED",
+      missingDocs,
+      unverifiedDocs,
+      message: "User must complete document verification before booking",
+    });
+  }
+
+  return res.json({
+    eligible: true,
+    message: "User is eligible to proceed with payment",
+  });
 };
