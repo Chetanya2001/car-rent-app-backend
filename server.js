@@ -15,7 +15,7 @@ app.get("/", (req, res) => res.send("Car Rental API Running 🚗"));
 app.use("/api", routes);
 // Sync DB
 require("./jobs/pickupOTP.job");
-require("./jobs/dropOTP.jobs");
+require("./jobs/dropOTP.job");
 db.sequelize.sync({ force: false }).then(() => {
   console.log("✅ Database synced");
 });
