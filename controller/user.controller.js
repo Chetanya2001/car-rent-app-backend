@@ -42,7 +42,7 @@ exports.register = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "1d" },
     );
 
     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
@@ -96,7 +96,7 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "12h" }
+      { expiresIn: "12h" },
     );
 
     return res.json({ message: "Login successful", token });
@@ -209,6 +209,14 @@ exports.getAllUsers = async (req, res) => {
         "phone",
         "role",
         "is_verified",
+      ],
+      include: [
+        {
+          model: UserDocuments,
+          as: "documents",
+          attributes: ["verification_status"],
+          required: false,
+        },
       ],
     });
     return res.json(users);
