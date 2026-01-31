@@ -20,6 +20,7 @@ module.exports = (sequelize) => {
           "National ID Card",
           "Voter Card",
           "PAN Card",
+          "Aadhaar",
           "Other",
         ),
         allowNull: false,
