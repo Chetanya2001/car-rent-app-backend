@@ -32,8 +32,9 @@ module.exports = (sequelize) => {
       foreignKey: "validated_by",
     });
     User.hasMany(models.UserDocuments, {
-      as: "documents",
       foreignKey: "user_id",
+      as: "documents",
+      onDelete: "CASCADE",
     });
     User.hasMany(models.Notification, { foreignKey: "user_id" });
   };
