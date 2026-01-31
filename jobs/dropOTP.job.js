@@ -17,6 +17,9 @@ function toIST(date) {
 cron.schedule("* * * * *", async () => {
   const now = new Date();
   const windowEnd = new Date(now.getTime() + 30 * 60 * 1000);
+  console.log("Now IST:", toIST(now));
+  console.log("WindowEnd IST:", toIST(windowEnd));
+
 
   try {
     const bookings = await Booking.findAll({
@@ -30,8 +33,8 @@ cron.schedule("* * * * *", async () => {
           required: true,
           where: {
             end_datetime: {
-              [Op.gte]: toIST(now),
-              [Op.lte]: toIST(windowEnd),
+              [Op.gte]: now,
+              [Op.lte]: windowEnd,
             },
           },
         },
