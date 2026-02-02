@@ -284,7 +284,7 @@ exports.bulkUpdateDocuments = async (req, res) => {
       if (allVerified && userDocuments.length > 0) {
         await User.update({ is_verified: true }, { where: { id: userId } });
       } else if (hasRejectedOrPending) {
-        await User.update({ is_verified: false }, { where: { id: userId } });
+        await User.update({ is_verified: true }, { where: { id: userId } });
       }
     }
 
