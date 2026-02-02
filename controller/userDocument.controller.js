@@ -1,5 +1,5 @@
 const { UserDocuments, User } = require("../models");
-const { uploadToS3 } = require("../utils/s3upload");
+const { uploadToS3 } = require("../utils/s3Upload");
 
 // Upload document
 exports.uploadDocument = async (req, res) => {
