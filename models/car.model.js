@@ -12,11 +12,6 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-
-      variant_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
       year: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -92,13 +87,8 @@ module.exports = (sequelize) => {
     Car.hasOne(models.CarLocation, { foreignKey: "car_id" });
     Car.hasMany(models.CarPhoto, { foreignKey: "car_id", as: "photos" });
     Car.hasOne(models.CarFeatures, { foreignKey: "car_id", as: "features" });
-    Car.hasOne(models.CarStandards, { foreignKey: "car_id", as: "standards" });
     Car.belongsTo(models.CarMake, { foreignKey: "make_id", as: "make" });
     Car.belongsTo(models.CarModel, { foreignKey: "model_id", as: "model" });
-    Car.belongsTo(models.CarVariant, {
-      foreignKey: "variant_id",
-      as: "variant",
-    });
   };
   return Car;
 };
