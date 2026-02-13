@@ -1,3 +1,4 @@
+const { UserDocuments } = require("../models");
 async function checkEligibilityInternal(userId) {
   const docs = await UserDocuments.findAll({
     where: {
