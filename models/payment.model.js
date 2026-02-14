@@ -37,6 +37,12 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
   });
+  Payment.associate = (models) => {
+    Payment.belongsTo(models.Booking, {
+      foreignKey: "booking_id",
+      as: "Booking", // ← must match the "as" you use in include
+    });
+  };
 
   return Payment;
 };
