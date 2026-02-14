@@ -115,3 +115,87 @@ exports.zeroPaymentConfirm = async (req, res) => {
 
   res.json({ message: "Zero payment booking confirmed" });
 };
+
+exports.getMyPayments = async (req, res) => {
+  // req.user comes from your JWT middleware (see below if you don't have it yet)
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+  }
+
+  try {
+    const payments = await Payment.findAll({
+      include: [
+        {
+          model: Booking,
+          as: "Booking",
+          where: { guest_id: userId }, // ← only this user's bookings
+          required: true, // inner join → skip payments without matching booking
+          attributes: [
+            "id",
+            "booking_type",
+            "total_amount",
+            "paid_amount",
+            "status",
+            "createdAt",
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]], // newest first
+      attributes: [
+        "id",
+        "amount",
+        "currency",
+        "payment_method",
+        "payment_gateway_order_id",
+        "payment_gateway_payment_id",
+        "status",
+        "createdAt",
+        "updatedAt",
+      ],
+    });
+
+    // Format response (clean, safe, no sensitive internal fields)
+    const formatted = payments.map((payment) => ({
+      id: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+      method: payment.payment_method,
+      razorpay_order_id: payment.payment_gateway_order_id,
+      razorpay_payment_id: payment.payment_gateway_payment_id,
+      status: payment.status,
+      paid_at: payment.createdAt,
+      booking: {
+        id: payment.Booking.id,
+        type: payment.Booking.booking_type,
+        total: payment.Booking.total_amount,
+        paid: payment.Booking.paid_amount,
+        booking_status: payment.Booking.status,
+        car: payment.Booking.Car
+          ? {
+              make: payment.Booking.Car.make,
+              model: payment.Booking.Car.model,
+              year: payment.Booking.Car.year,
+            }
+          : null,
+      },
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: formatted.length,
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("[getMyPayments] Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch payments",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
