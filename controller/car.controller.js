@@ -1083,9 +1083,8 @@ exports.getCarsByHostId = async (req, res) => {
       return res.status(400).json({ message: "host_id is required" });
     }
 
-    // Only fetch cars that are visible
     const cars = await Car.findAll({
-      where: { host_id, is_visible: true }, // ✅ visibility filter
+      where: { host_id, is_visible: true },
       include: [
         {
           model: CarDocument,
@@ -1131,12 +1130,15 @@ exports.getCarsByHostId = async (req, res) => {
       make: car.make?.name || null,
       model: car.model?.name || null,
       year: car.year,
-      price_per_hour: parseFloat(car.price_per_hour),
-      price_per_km: parseFloat(car.price_per_km),
+      car_mode: car.car_mode, // ✅ added
+      price_per_hour:
+        car.price_per_hour !== null ? parseFloat(car.price_per_hour) : null, // ✅ null-safe
+      price_per_km:
+        car.price_per_km !== null ? parseFloat(car.price_per_km) : null, // ✅ added
       kms_driven: car.kms_driven,
       available_from: car.available_from,
       available_till: car.available_till,
-      is_visible: car.is_visible, // include visibility in response
+      is_visible: car.is_visible,
       documents: car.CarDocument
         ? {
             rc_image_front: car.CarDocument.rc_image_front,
