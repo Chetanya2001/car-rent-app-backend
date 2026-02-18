@@ -1001,19 +1001,19 @@ exports.searchIntercityCars = async (req, res) => {
 
         id: {
           [Op.notIn]: Sequelize.literal(`
-            (
-              SELECT b.car_id
-              FROM Bookings b
-              INNER JOIN IntercityBookings ib
-                ON ib.booking_id = b.id
-              WHERE b.booking_type = 'INTERCITY'
-                AND b.status IN ('CONFIRMED', "ACTIVE")
-                AND b.createdAt BETWEEN
-                  '${blockStart.toISOString()}'
-                  AND
-                  '${blockEnd.toISOString()}'
-            )
-          `),
+    (
+      SELECT b.car_id
+      FROM Bookings b
+      INNER JOIN IntercityBookings ib
+        ON ib.booking_id = b.id
+      WHERE b.booking_type = 'INTERCITY'
+        AND b.status IN ('CONFIRMED', 'ACTIVE')
+        AND b.createdAt BETWEEN
+          '${blockStart.toISOString()}'
+          AND
+          '${blockEnd.toISOString()}'
+    )
+  `),
         },
       },
 
