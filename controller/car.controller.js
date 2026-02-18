@@ -1057,8 +1057,8 @@ exports.searchIntercityCars = async (req, res) => {
     /* ---------------- RESPONSE ---------------- */
     const response = cars.map((car) => ({
       id: car.id,
-      make: car["make.name"],
-      model: car["model.name"],
+      make: car.make?.name,
+      model: car.model?.model_name,
       price_per_km: car.price_per_km,
 
       pickup_city: pickup_location.city,
