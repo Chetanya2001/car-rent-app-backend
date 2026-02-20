@@ -19,6 +19,8 @@ exports.bookIntercity = async (req, res) => {
       luggage,
       distance_km,
       driver_amount,
+      pickup_datetime, // ✅ PASS IT
+      drop_datetime,
     } = req.body;
 
     const guest = await User.findByPk(guest_id);
@@ -45,6 +47,8 @@ exports.bookIntercity = async (req, res) => {
         luggage,
         distance_km,
         driver_amount,
+        pickup_datetime, // ✅ ADD THIS
+        drop_datetime,
       },
     });
 
