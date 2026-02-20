@@ -5,6 +5,7 @@ const {
   IntercityBooking,
   Payment,
 } = require("../models");
+
 const { Op } = require("sequelize");
 
 /* =====================================================
@@ -15,20 +16,21 @@ exports.createSelfDriveBooking = async (data) => {
     const startISO = new Date(data.selfDrive.start_datetime).toISOString();
     const endISO = new Date(data.selfDrive.end_datetime).toISOString();
 
-    /* -------------------- CONFLICT CHECK -------------------- */
+    /* -------------------- CONFLICT CHECK (CROSS MODE) -------------------- */
     const [rows] = await sequelize.query(
       `
       SELECT b.id
       FROM Bookings b
-      INNER JOIN SelfDriveBookings sdb
+      LEFT JOIN SelfDriveBookings sdb
         ON sdb.booking_id = b.id
+      LEFT JOIN IntercityBookings ib
+        ON ib.booking_id = b.id
       WHERE b.car_id = :car_id
-        AND b.booking_type = 'SELF_DRIVE'
         AND b.status IN ('CONFIRMED','ACTIVE')
         AND (
-          sdb.start_datetime < :new_end
-          AND
-          sdb.end_datetime   > :new_start
+          (sdb.start_datetime < :new_end AND sdb.end_datetime > :new_start)
+          OR
+          (ib.pickup_datetime < :new_end AND ib.drop_datetime > :new_start)
         )
       FOR UPDATE
       `,
@@ -60,12 +62,12 @@ exports.createSelfDriveBooking = async (data) => {
       { transaction: t },
     );
 
-    /* -------------------- CREATE SELF DRIVE -------------------- */
+    /* -------------------- CREATE SELF DRIVE DETAILS -------------------- */
     const selfDrive = await SelfDriveBooking.create(
       {
         ...data.selfDrive,
         booking_id: booking.id,
-        total_amount: data.total_amount, // ← fix here
+        total_amount: data.total_amount,
       },
       { transaction: t },
     );
@@ -90,29 +92,48 @@ exports.createSelfDriveBooking = async (data) => {
 ===================================================== */
 exports.createIntercityBooking = async (data) => {
   return sequelize.transaction(async (t) => {
-    // 🔒 Prevent double booking
-    const conflict = await Booking.findOne({
-      where: {
-        car_id: data.car_id,
-        status: {
-          [Op.in]: ["CONFIRMED", "ACTIVE"],
-        },
-      },
-      lock: t.LOCK.UPDATE,
-      transaction: t,
-    });
+    const pickupISO = new Date(data.intercity.pickup_datetime).toISOString();
 
-    if (conflict) {
-      throw new Error("Car already booked");
+    const dropISO = new Date(data.intercity.drop_datetime).toISOString();
+
+    /* -------------------- CONFLICT CHECK (CROSS MODE) -------------------- */
+    const [rows] = await sequelize.query(
+      `
+      SELECT b.id
+      FROM Bookings b
+      LEFT JOIN SelfDriveBookings sdb
+        ON sdb.booking_id = b.id
+      LEFT JOIN IntercityBookings ib
+        ON ib.booking_id = b.id
+      WHERE b.car_id = :car_id
+        AND b.status IN ('CONFIRMED','ACTIVE')
+        AND (
+          (sdb.start_datetime < :new_drop AND sdb.end_datetime > :new_pickup)
+          OR
+          (ib.pickup_datetime < :new_drop AND ib.drop_datetime > :new_pickup)
+        )
+      FOR UPDATE
+      `,
+      {
+        replacements: {
+          car_id: data.car_id,
+          new_pickup: pickupISO,
+          new_drop: dropISO,
+        },
+        transaction: t,
+      },
+    );
+
+    if (rows.length > 0) {
+      throw new Error("Car already booked in this time range");
     }
 
-    // 1️⃣ Create booking
+    /* -------------------- CREATE BOOKING -------------------- */
     const booking = await Booking.create(
       {
         guest_id: data.guest_id,
         car_id: data.car_id,
         booking_type: "INTERCITY",
-
         status: "CONFIRMED",
         total_amount: data.total_amount,
         paid_amount: 0,
@@ -121,7 +142,7 @@ exports.createIntercityBooking = async (data) => {
       { transaction: t },
     );
 
-    // 2️⃣ Create intercity details
+    /* -------------------- CREATE INTERCITY DETAILS -------------------- */
     const intercity = await IntercityBooking.create(
       {
         ...data.intercity,
@@ -130,7 +151,7 @@ exports.createIntercityBooking = async (data) => {
       { transaction: t },
     );
 
-    // 3️⃣ Create ZERO payment record
+    /* -------------------- ZERO PAYMENT -------------------- */
     await Payment.create(
       {
         booking_id: booking.id,
