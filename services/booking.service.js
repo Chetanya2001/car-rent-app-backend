@@ -92,10 +92,11 @@ exports.createSelfDriveBooking = async (data) => {
 ===================================================== */
 exports.createIntercityBooking = async (data) => {
   return sequelize.transaction(async (t) => {
+    console.log(data.intercity.pickup_datetime);
+    console.log(data.intercity.drop_datetime);
     const pickupISO = new Date(data.intercity.pickup_datetime).toISOString();
 
     const dropISO = new Date(data.intercity.drop_datetime).toISOString();
-    console.log(pickupISO, dropISO);
 
     /* -------------------- CONFLICT CHECK (CROSS MODE) -------------------- */
     const [rows] = await sequelize.query(
