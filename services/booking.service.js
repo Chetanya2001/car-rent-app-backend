@@ -124,21 +124,18 @@ exports.createIntercityBooking = async (data) => {
     /* -------------------- CONFLICT CHECK (CROSS MODE) -------------------- */
     const [rows] = await sequelize.query(
       `
-      SELECT b.id
-      FROM Bookings b
-      LEFT JOIN SelfDriveBookings sdb
-        ON sdb.booking_id = b.id
-      LEFT JOIN IntercityBookings ib
-        ON ib.booking_id = b.id
-      WHERE b.car_id = :car_id
-        AND b.status IN ('CONFIRMED','ACTIVE')
-        AND (
-          (sdb.start_datetime < :new_drop AND sdb.end_datetime > :new_pickup)
-          OR
-          (ib.pickup_datetime < :new_drop AND ib.drop_datetime > :new_pickup)
-        )
-      FOR UPDATE
-      `,
+  SELECT b.id
+  FROM Bookings b
+  INNER JOIN SelfDriveBookings sdb
+    ON sdb.booking_id = b.id
+  WHERE b.car_id = :car_id
+    AND b.status IN ('CONFIRMED','ACTIVE')
+    AND (
+      sdb.start_datetime < :new_drop
+      AND sdb.end_datetime > :new_pickup
+    )
+  FOR UPDATE
+  `,
       {
         replacements: {
           car_id: data.car_id,
