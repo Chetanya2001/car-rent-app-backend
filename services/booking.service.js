@@ -5,6 +5,7 @@ const {
   IntercityBooking,
   Payment,
 } = require("../models");
+const moment = require("moment-timezone");
 
 const { Op } = require("sequelize");
 
@@ -92,15 +93,33 @@ exports.createSelfDriveBooking = async (data) => {
 ===================================================== */
 exports.createIntercityBooking = async (data) => {
   return sequelize.transaction(async (t) => {
-    const pickupDate = new Date(data.intercity.pickup_datetime);
-    const dropDate = new Date(data.intercity.drop_datetime);
+    // Force IST timezone
+    const pickup = moment.tz(
+      data.intercity.pickup_datetime,
+      "YYYY-MM-DDTHH:mm",
+      "Asia/Kolkata",
+    );
 
-    if (isNaN(pickupDate.getTime()) || isNaN(dropDate.getTime())) {
+    const drop = moment.tz(
+      data.intercity.drop_datetime,
+      "YYYY-MM-DDTHH:mm",
+      "Asia/Kolkata",
+    );
+
+    // Debug logs
+    console.log("BACKEND pickup =", pickup.format());
+    console.log("BACKEND drop =", drop.format());
+    console.log("Timezone =", pickup.tz());
+
+    // Validation
+    if (!pickup.isValid() || !drop.isValid()) {
+      console.error("INVALID DATETIME:", data.intercity);
       throw new Error("Invalid pickup or drop datetime");
     }
 
-    const pickupISO = pickupDate.toISOString();
-    const dropISO = dropDate.toISOString();
+    // Convert to MySQL format (IST, not UTC)
+    const pickupISO = pickup.format("YYYY-MM-DD HH:mm:ss");
+    const dropISO = drop.format("YYYY-MM-DD HH:mm:ss");
 
     /* -------------------- CONFLICT CHECK (CROSS MODE) -------------------- */
     const [rows] = await sequelize.query(
@@ -152,6 +171,8 @@ exports.createIntercityBooking = async (data) => {
     const intercity = await IntercityBooking.create(
       {
         ...data.intercity,
+        pickup_datetime: pickupISO,
+        drop_datetime: dropISO,
         booking_id: booking.id,
       },
       { transaction: t },
