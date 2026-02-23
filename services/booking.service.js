@@ -94,19 +94,19 @@ exports.createSelfDriveBooking = async (data) => {
 exports.createIntercityBooking = async (data) => {
   return sequelize.transaction(async (t) => {
     // Force IST timezone
+
+    // Pickup (IST)
     const pickup = moment.tz(
       data.intercity.pickup_datetime,
       "YYYY-MM-DDTHH:mm",
       "Asia/Kolkata",
     );
 
-    const drop = moment.tz(
-      data.intercity.drop_datetime,
-      "YYYY-MM-DDTHH:mm",
-      "Asia/Kolkata",
-    );
+    // Estimate duration (example: 60 km/hr)
+    const estimatedHours = (data.intercity.distance_km || 0) / 60;
 
-    // Debug logs
+    // Minimum 2 hours safety buffer
+    const drop = pickup.clone().add(Math.max(estimatedHours, 2), "hours"); // Debug logs
     console.log("BACKEND pickup =", pickup.format());
     console.log("BACKEND drop =", drop.format());
     console.log("Timezone =", pickup.tz());
@@ -190,5 +190,5 @@ exports.createIntercityBooking = async (data) => {
     );
 
     return { booking, intercity };
-  });
+  };);
 };
