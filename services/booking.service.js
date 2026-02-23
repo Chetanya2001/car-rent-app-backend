@@ -190,5 +190,5 @@ exports.createIntercityBooking = async (data) => {
     );
 
     return { booking, intercity };
-  };);
+  });
 };
