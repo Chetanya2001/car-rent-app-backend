@@ -92,11 +92,15 @@ exports.createSelfDriveBooking = async (data) => {
 ===================================================== */
 exports.createIntercityBooking = async (data) => {
   return sequelize.transaction(async (t) => {
-    console.log(data.intercity.pickup_datetime);
-    console.log(data.intercity.drop_datetime);
-    const pickupISO = new Date(data.intercity.pickup_datetime).toISOString();
+    const pickupDate = new Date(data.intercity.pickup_datetime);
+    const dropDate = new Date(data.intercity.drop_datetime);
 
-    const dropISO = new Date(data.intercity.drop_datetime).toISOString();
+    if (isNaN(pickupDate.getTime()) || isNaN(dropDate.getTime())) {
+      throw new Error("Invalid pickup or drop datetime");
+    }
+
+    const pickupISO = pickupDate.toISOString();
+    const dropISO = dropDate.toISOString();
 
     /* -------------------- CONFLICT CHECK (CROSS MODE) -------------------- */
     const [rows] = await sequelize.query(
