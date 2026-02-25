@@ -89,6 +89,10 @@ module.exports = (sequelize) => {
     Car.hasOne(models.CarFeatures, { foreignKey: "car_id", as: "features" });
     Car.belongsTo(models.CarMake, { foreignKey: "make_id", as: "make" });
     Car.belongsTo(models.CarModel, { foreignKey: "model_id", as: "model" });
+    Car.hasMany(models.ServiceBooking, {
+      foreignKey: "car_id",
+      as: "serviceBookings",
+    });
   };
   return Car;
 };

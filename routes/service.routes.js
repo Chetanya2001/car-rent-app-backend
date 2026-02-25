@@ -5,5 +5,7 @@ router.post("/book", controller.createBooking);
 router.get("/:id/checklist", controller.getChecklist);
 router.patch("/checklist/:itemId", controller.updateChecklistItem);
 router.post("/:id/complete", controller.completeBooking);
+router.get("/", controller.getAllServicePlans);
+router.post("/addCar", controller.addCarForService);
 
 module.exports = router;
