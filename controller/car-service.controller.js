@@ -4,6 +4,7 @@ const {
   CarMake,
   CarModel,
   CarPhoto,
+  CarLocation,
   ServiceBooking,
   ChecklistItem,
   ServicePlan,
