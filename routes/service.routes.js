@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const controller = require("../controller/car-service.controller");
-const verifyToken = require("../middleware/authmiddleware");
+const { verifyToken } = require("../middleware/authmiddleware");
 
 router.post("/book", verifyToken, controller.createBooking);
 router.get("/:id/checklist", controller.getChecklist);
