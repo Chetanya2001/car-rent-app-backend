@@ -3,6 +3,12 @@ module.exports = (sequelize) => {
   const Car = sequelize.define(
     "Car",
     {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+
       make_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
