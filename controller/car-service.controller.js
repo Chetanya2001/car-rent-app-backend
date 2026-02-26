@@ -10,6 +10,7 @@ const {
   ChecklistTemplate,
 } = require("../models");
 const bookingService = require("../services/car-service.service");
+const { uploadToS3 } = require("../utils/s3Upload");
 
 /**
  * GET /service/cars
@@ -104,24 +105,46 @@ exports.addCarForService = async (req, res) => {
       owner_name,
       registration_type,
       hand_type,
+      // Location fields
+      address,
+      city,
+      latitude,
+      longitude,
     } = req.body;
 
+    // ── 1. Validate required fields ───────────────────────────────────────
     if (!make_id || !model_id || !year) {
       return res.status(400).json({
         message: "make_id, model_id, and year are required",
       });
     }
 
-    // Create car — rental-specific fields stay at defaults/null
+    if (!req.file && !req.files?.car_image) {
+      return res.status(400).json({
+        message: "car_image is required",
+      });
+    }
+
+    // ── 2. Create Car record ──────────────────────────────────────────────
     const car = await Car.create({
       make_id,
       model_id,
       year,
       host_id: user_id,
-      status: "active", // no approval flow needed for service-only cars
+      status: "active",
+      is_visible: true,
     });
 
-    // Optionally store document details if provided
+    // ── 3. Upload image to S3 → CarPhoto ──────────────────────────────────
+    const imageFile = req.file || req.files?.car_image?.[0];
+    const photoUrl = await uploadToS3(imageFile);
+
+    await CarPhoto.create({
+      car_id: car.id,
+      photo_url: photoUrl,
+    });
+
+    // ── 4. CarDocument (RC + owner details) ───────────────────────────────
     if (rc_number || owner_name || registration_type || hand_type) {
       await CarDocument.create({
         car_id: car.id,
@@ -132,9 +155,21 @@ exports.addCarForService = async (req, res) => {
       });
     }
 
+    // ── 5. CarLocation ────────────────────────────────────────────────────
+    if (city || address || latitude || longitude) {
+      await CarLocation.create({
+        car_id: car.id,
+        address: address || null,
+        city: city || null,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+      });
+    }
+
     return res.status(201).json({
       message: "Car added successfully",
       car_id: car.id,
+      thumbnail: photoUrl,
     });
   } catch (error) {
     console.error("Error adding car for service:", error);

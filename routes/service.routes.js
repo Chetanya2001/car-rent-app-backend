@@ -7,6 +7,11 @@ router.get("/:id/checklist", controller.getChecklist);
 router.patch("/checklist/:itemId", controller.updateChecklistItem);
 router.post("/:id/complete", controller.completeBooking);
 router.get("/", controller.getAllServicePlans);
-router.post("/addCar", controller.addCarForService);
+router.post(
+  "/addCar",
+  verifyToken,
+  upload.single("car_image"),
+  controller.addCarForService,
+);
 
 module.exports = router;
