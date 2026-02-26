@@ -151,10 +151,22 @@ exports.addCarForService = async (req, res) => {
  */
 exports.createBooking = async (req, res) => {
   try {
+    console.log("==== CREATE BOOKING HIT ====");
+
     const { car_id, plan_id, scheduled_at, notes } = req.body;
-    const user_id = req.user.id;
+    const user_id = req.user?.id;
+
+    console.log("Request Body:", req.body);
+    console.log("Authenticated User:", req.user);
+    console.log("Extracted Values:", {
+      car_id,
+      plan_id,
+      scheduled_at,
+      user_id,
+    });
 
     if (!car_id || !plan_id || !scheduled_at) {
+      console.log("❌ Missing required fields");
       return res.status(400).json({
         message: "car_id, plan_id, and scheduled_at are required",
       });
@@ -165,18 +177,24 @@ exports.createBooking = async (req, res) => {
       where: { id: car_id, host_id: user_id, is_visible: true },
     });
 
+    console.log("Car lookup result:", car);
+
     if (!car) {
+      console.log("❌ Car not found or not owned by user");
       return res.status(404).json({
         message: "Car not found or does not belong to you",
       });
     }
 
-    // Verify the plan exists and is active
+    // Verify the plan exists
     const plan = await ServicePlan.findOne({
       where: { id: plan_id, is_active: true },
     });
 
+    console.log("Plan lookup result:", plan);
+
     if (!plan) {
+      console.log("❌ Plan not found or inactive");
       return res.status(404).json({
         message: "Service plan not found or inactive",
       });
@@ -190,13 +208,18 @@ exports.createBooking = async (req, res) => {
       notes: notes || null,
     });
 
+    console.log("✅ Booking created:", booking);
+
     return res.status(201).json({
       message: "Service booking created successfully",
       booking,
     });
   } catch (err) {
-    console.error("Error creating service booking:", err);
-    return res.status(400).json({ error: err.message });
+    console.error("🔥 ERROR creating service booking:", err);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 
