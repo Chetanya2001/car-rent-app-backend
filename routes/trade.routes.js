@@ -1,9 +1,17 @@
 const router = require("express").Router();
 const ctrl = require("../controller/trade.controller");
+const verifyToken = require("../middleware/authmiddleware");
 
-router.post("/request", ctrl.createRequest);
-router.post("/listing", ctrl.createListing);
-router.post("/offer", ctrl.makeOffer);
-router.post("/offer/:offerId/accept", ctrl.acceptOffer);
+// Buy requests
+router.post("/request", verifyToken, ctrl.createRequest);
+router.get("/request/mine", verifyToken, ctrl.getMyRequests);
+
+// Sell listings
+router.post("/listing", verifyToken, ctrl.createListing);
+router.get("/listing/mine", verifyToken, ctrl.getMyListings);
+
+// Offers & Deals
+router.post("/offer", verifyToken, ctrl.makeOffer);
+router.post("/offer/:offerId/accept", verifyToken, ctrl.acceptOffer);
 
 module.exports = router;
