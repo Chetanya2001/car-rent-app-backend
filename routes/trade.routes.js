@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const ctrl = require("../controller/trade.controller");
-const verifyToken = require("../middleware/authmiddleware");
+const { verifyToken } = require("../middleware/authmiddleware");
 
 // Buy requests
 router.post("/request", verifyToken, ctrl.createRequest);
