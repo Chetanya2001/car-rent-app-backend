@@ -1119,7 +1119,7 @@ exports.getCarsByHostId = async (req, res) => {
           model: CarModel,
           as: "model",
           attributes: [
-            "name",
+            "model_name",
             "body_type",
             "variant_name",
             "transmission",
@@ -1140,7 +1140,7 @@ exports.getCarsByHostId = async (req, res) => {
     const formattedCars = cars.map((car) => ({
       id: car.id,
       make: car.make?.name || null,
-      model: car.model?.name || null,
+      model: car.model?.model_name || null,
       body_type: car.model?.body_type || null,
       variant_name: car.model?.variant_name || null,
       transmission: car.model?.transmission || null,
