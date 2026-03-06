@@ -1136,7 +1136,6 @@ exports.getCarsByHostId = async (req, res) => {
         .status(404)
         .json({ message: "No visible cars found for this host" });
     }
-    console.log(cars.model.name);
 
     const formattedCars = cars.map((car) => ({
       id: car.id,
