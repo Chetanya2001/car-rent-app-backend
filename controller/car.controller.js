@@ -1163,6 +1163,7 @@ exports.getCarsByHostId = async (req, res) => {
             insurance_company: car.CarDocument.insurance_company,
             insurance_idv_value: car.CarDocument.insurance_idv_value,
             insurance_image: car.CarDocument.insurance_image,
+            insurance_valid_till: car.CarDocument.insurance_valid_till,
             rc_number: car.CarDocument.rc_number,
             rc_valid_till: car.CarDocument.rc_valid_till,
             city_of_registration: car.CarDocument.city_of_registration,

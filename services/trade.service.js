@@ -3,9 +3,12 @@ const {
   TradeListing,
   TradeOffer,
   TradeDeal,
+  Car,
+  CarPhoto,
 } = require("../models");
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ─── Field whitelists ─────────────────────────────────────────────────────────
+
 const allowedRequestFields = [
   "preferred_make",
   "preferred_model",
@@ -27,43 +30,105 @@ const allowedRequestFields = [
   "notes",
 ];
 
-const allowedListingFields = [
-  "car_id",
-  "kms_driven",
-  "expected_price",
-  "fuel_type",
-  "body_type",
-  "transmission",
-  "color",
-  "features",
-  "seats",
-  "owner",
-  "availability",
-  "city",
-  "notes",
-  "photos",
-];
-
 const pick = (obj, keys) =>
   keys.reduce((acc, k) => {
     if (obj[k] !== undefined) acc[k] = obj[k];
     return acc;
   }, {});
 
-// ── service methods ───────────────────────────────────────────────────────────
+// ─── createRequest ────────────────────────────────────────────────────────────
+
 exports.createRequest = async (buyer_id, data) => {
   const safeData = pick(data, allowedRequestFields);
   return TradeRequest.create({ buyer_id, ...safeData });
 };
 
+// ─── createListing ────────────────────────────────────────────────────────────
+
 exports.createListing = async (seller_id, data) => {
-  const safeData = pick(data, allowedListingFields);
-  return TradeListing.create({ seller_id, ...safeData });
+  const { car_id, kms_driven, expected_price, city, notes } = data;
+
+  // ── 1. Validate required fields ────────────────────────────────────────────
+  if (!car_id) throw new Error("car_id is required");
+  if (!expected_price) throw new Error("expected_price is required");
+  if (!city) throw new Error("city is required");
+
+  // ── 2. Verify car ownership ────────────────────────────────────────────────
+  const car = await Car.findOne({ where: { id: car_id, host_id: seller_id } });
+  if (!car) throw new Error("Car not found or does not belong to you");
+
+  // ── 3. Update Car.kms_driven ───────────────────────────────────────────────
+  if (kms_driven !== undefined && kms_driven !== null) {
+    const kms = parseInt(kms_driven, 10);
+    if (isNaN(kms) || kms < 0) {
+      throw new Error("kms_driven must be a non-negative number");
+    }
+    await car.update({ kms_driven: kms });
+  }
+
+  // ── 4. Create TradeListing ─────────────────────────────────────────────────
+  //   TradeListing columns: asking_price | city | description | status
+  //   We map: expected_price → asking_price, notes → description
+  const listing = await TradeListing.create({
+    seller_id,
+    car_id,
+    asking_price: parseFloat(expected_price),
+    city: city.trim(),
+    description: notes ? notes.trim() : null,
+    status: "active",
+  });
+
+  return listing;
 };
+
+// ─── getMyListings ────────────────────────────────────────────────────────────
+
+exports.getMyListings = async (seller_id) => {
+  return TradeListing.findAll({
+    where: { seller_id },
+    include: [
+      {
+        model: Car,
+        as: "car",
+        attributes: ["id", "year", "kms_driven", "status"],
+        include: [{ model: CarPhoto, as: "photos", attributes: ["photo_url"] }],
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+  });
+};
+
+// ─── updateListing ────────────────────────────────────────────────────────────
+
+exports.updateListing = async (seller_id, listing_id, data) => {
+  const listing = await TradeListing.findOne({
+    where: { id: listing_id, seller_id },
+  });
+  if (!listing) throw new Error("Listing not found or does not belong to you");
+
+  const allowed = ["asking_price", "city", "description", "status"];
+  const updates = pick(data, allowed);
+  return listing.update(updates);
+};
+
+// ─── deleteListing ────────────────────────────────────────────────────────────
+
+exports.deleteListing = async (seller_id, listing_id) => {
+  const listing = await TradeListing.findOne({
+    where: { id: listing_id, seller_id },
+  });
+  if (!listing) throw new Error("Listing not found or does not belong to you");
+  await listing.destroy();
+  return { message: "Listing deleted successfully" };
+};
+
+// ─── makeOffer ────────────────────────────────────────────────────────────────
 
 exports.makeOffer = async (data) => {
   return TradeOffer.create(data);
 };
+
+// ─── acceptOffer ──────────────────────────────────────────────────────────────
 
 exports.acceptOffer = async (offerId) => {
   const offer = await TradeOffer.findByPk(offerId, {
@@ -89,16 +154,11 @@ exports.acceptOffer = async (offerId) => {
   return deal;
 };
 
+// ─── getMyRequests ────────────────────────────────────────────────────────────
+
 exports.getMyRequests = async (buyer_id) => {
   return TradeRequest.findAll({
     where: { buyer_id },
-    order: [["createdAt", "DESC"]],
-  });
-};
-
-exports.getMyListings = async (seller_id) => {
-  return TradeListing.findAll({
-    where: { seller_id },
     order: [["createdAt", "DESC"]],
   });
 };
