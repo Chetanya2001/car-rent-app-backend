@@ -1114,7 +1114,18 @@ exports.getCarsByHostId = async (req, res) => {
           as: "make",
           attributes: ["name"],
         },
-        { model: CarModel, as: "model", attributes: ["name"] },
+        {
+          model: CarModel,
+          as: "model",
+          attributes: [
+            "name",
+            "body_type",
+            "variant_name",
+            "transmission",
+            "seats",
+            "fuel",
+          ],
+        },
       ],
       order: [["createdAt", "DESC"]],
     });
@@ -1129,6 +1140,11 @@ exports.getCarsByHostId = async (req, res) => {
       id: car.id,
       make: car.make?.name || null,
       model: car.model?.name || null,
+      body_type: car.model?.body_type || null,
+      variant_name: car.model?.variant_name || null,
+      transmission: car.model?.transmission || null,
+      seats: car.model?.seats || null,
+      fuel: car.model?.fuel || null,
       year: car.year,
       car_mode: car.car_mode, // ✅ added
       price_per_hour:
