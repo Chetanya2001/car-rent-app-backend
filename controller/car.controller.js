@@ -1140,7 +1140,7 @@ exports.getCarsByHostId = async (req, res) => {
     const formattedCars = cars.map((car) => ({
       id: car.id,
       make: car.make?.name || null,
-      model: car.model?.name || null,
+      model: car.model["name"] || null,
       body_type: car.model?.body_type || null,
       variant_name: car.model?.variant_name || null,
       transmission: car.model?.transmission || null,
