@@ -4,19 +4,7 @@ const tradeService = require("../services/trade.service");
 
 /**
  * POST /trade/listing
- *
- * Expected body from SellCarScreen:
- * {
- *   car_id        : string | number   (required)
- *   expected_price: number            (required) → stored as asking_price
- *   city          : string            (required)
- *   kms_driven    : number            (optional) → also updates Car.kms_driven
- *   notes         : string            (optional) → stored as description
- *   fuel_type     : string            (optional, informational)
- *   color         : string            (optional, informational)
- *   owner         : string            (optional, informational)
- *   photos        : string[]          (optional, informational)
- * }
+ * Body: { car_id, kms_driven, expected_price, city, notes?, fuel_type?, color?, owner?, photos? }
  */
 exports.createListing = async (req, res) => {
   try {
@@ -33,12 +21,27 @@ exports.createListing = async (req, res) => {
 
 /**
  * GET /trade/listing/my
- * All listings by the authenticated seller, with car details
+ * Returns { listings: [...], unlistedCars: [...] }
+ * ▸ listings     → seller's trade listings with car + asking_price
+ * ▸ unlistedCars → seller's cars that have no active listing
  */
 exports.getMyListings = async (req, res) => {
   try {
-    const listings = await tradeService.getMyListings(req.user.id);
-    res.json({ success: true, data: listings });
+    const data = await tradeService.getMyListings(req.user.id);
+    res.json({ success: true, data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+};
+
+/**
+ * GET /trade/listing/all
+ * Public feed — all active listings (for buyers to browse)
+ */
+exports.getAllListings = async (req, res) => {
+  try {
+    const data = await tradeService.getAllListings();
+    res.json({ success: true, data });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
@@ -46,7 +49,6 @@ exports.getMyListings = async (req, res) => {
 
 /**
  * PATCH /trade/listing/:id
- * Update asking_price, city, description, or status
  */
 exports.updateListing = async (req, res) => {
   try {
@@ -75,9 +77,6 @@ exports.deleteListing = async (req, res) => {
 
 // ─── Requests ─────────────────────────────────────────────────────────────────
 
-/**
- * POST /trade/request
- */
 exports.createRequest = async (req, res) => {
   try {
     const request = await tradeService.createRequest(req.user.id, req.body);
@@ -87,9 +86,6 @@ exports.createRequest = async (req, res) => {
   }
 };
 
-/**
- * GET /trade/request/my
- */
 exports.getMyRequests = async (req, res) => {
   try {
     const requests = await tradeService.getMyRequests(req.user.id);
@@ -101,9 +97,6 @@ exports.getMyRequests = async (req, res) => {
 
 // ─── Offers ───────────────────────────────────────────────────────────────────
 
-/**
- * POST /trade/offer
- */
 exports.makeOffer = async (req, res) => {
   try {
     const offer = await tradeService.makeOffer(req.body);
@@ -113,9 +106,6 @@ exports.makeOffer = async (req, res) => {
   }
 };
 
-/**
- * POST /trade/offer/:offerId/accept
- */
 exports.acceptOffer = async (req, res) => {
   try {
     const deal = await tradeService.acceptOffer(req.params.offerId);
