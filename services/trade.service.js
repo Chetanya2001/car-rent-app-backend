@@ -91,7 +91,28 @@ exports.getMyListings = async (seller_id) => {
         model: Car,
         as: "car",
         attributes: ["id", "year", "kms_driven", "status"],
-        include: [{ model: CarPhoto, as: "photos", attributes: ["photo_url"] }],
+
+        include: [
+          {
+            model: CarMake,
+            as: "make",
+            attributes: ["name"],
+          },
+          {
+            model: CarModel,
+            as: "model",
+            attributes: ["model_name"],
+          },
+          {
+            model: CarPhoto,
+            as: "photos",
+            attributes: ["photo_url"],
+          },
+          {
+            model: CarDocument,
+            attributes: ["rc_number"],
+          },
+        ],
       },
     ],
     order: [["createdAt", "DESC"]],
