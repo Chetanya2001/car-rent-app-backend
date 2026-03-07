@@ -86,7 +86,6 @@ exports.createListing = async (seller_id, data) => {
 
 // ─── getMyListings ────────────────────────────────────────────────────────────
 exports.getMyListings = async (seller_id) => {
-  // 1. All listings for this seller
   const listings = await TradeListing.findAll({
     where: { seller_id },
     include: [
@@ -96,11 +95,7 @@ exports.getMyListings = async (seller_id) => {
         attributes: ["id", "year", "kms_driven", "status"],
         include: [
           { model: CarMake, as: "make", attributes: ["name"] },
-          {
-            model: CarModel,
-            as: "model",
-            attributes: [["model_name", "name"]],
-          },
+          { model: CarModel, as: "model", attributes: ["model_name"] }, // ← fixed
           { model: CarPhoto, as: "photos", attributes: ["photo_url"] },
           {
             model: CarDocument,
@@ -124,21 +119,18 @@ exports.getMyListings = async (seller_id) => {
     order: [["createdAt", "DESC"]],
   });
 
-  // 2. IDs of cars that already have a listing
   const listedCarIds = new Set(listings.map((l) => l.car_id));
 
-  // 3. All cars owned by this seller
   const allCars = await Car.findAll({
     where: { host_id: seller_id },
     attributes: ["id", "year", "kms_driven", "status"],
     include: [
       { model: CarMake, as: "make", attributes: ["name"] },
-      { model: CarModel, as: "model", attributes: [["name"]] },
+      { model: CarModel, as: "model", attributes: ["model_name"] }, // ← fixed
       { model: CarPhoto, as: "photos", attributes: ["photo_url"] },
     ],
   });
 
-  // 4. Cars with no active listing
   const unlistedCars = allCars.filter((c) => !listedCarIds.has(c.id));
 
   return { listings, unlistedCars };
