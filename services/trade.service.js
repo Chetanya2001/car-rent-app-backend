@@ -3,6 +3,8 @@ const {
   TradeListing,
   TradeOffer,
   TradeDeal,
+  CarMake,
+  CarModel,
   Car,
   CarPhoto,
 } = require("../models");
@@ -84,41 +86,59 @@ exports.createListing = async (seller_id, data) => {
 // ─── getMyListings ────────────────────────────────────────────────────────────
 
 exports.getMyListings = async (seller_id) => {
-  return TradeListing.findAll({
+  // 1. Fetch all listings with car details
+  const listings = await TradeListing.findAll({
     where: { seller_id },
     include: [
       {
         model: Car,
         as: "car",
         attributes: ["id", "year", "kms_driven", "status"],
-
         include: [
-          {
-            model: CarMake,
-            as: "make",
-            attributes: ["name"],
-          },
-          {
-            model: CarModel,
-            as: "model",
-            attributes: ["model_name"],
-          },
-          {
-            model: CarPhoto,
-            as: "photos",
-            attributes: ["photo_url"],
-          },
+          { model: CarMake, as: "make", attributes: ["name"] },
+          { model: CarModel, as: "model", attributes: ["name"] }, // ← was "model_name", fix to "name" or alias it
+          { model: CarPhoto, as: "photos", attributes: ["photo_url"] },
           {
             model: CarDocument,
-            attributes: ["rc_number"],
+            as: "CarDocument",
+            attributes: [
+              "rc_number",
+              "owner_name",
+              "city_of_registration",
+              "rc_valid_till",
+              "rc_image_front",
+              "rc_image_back",
+              "insurance_company",
+              "insurance_idv_value",
+              "insurance_image",
+              "insurance_valid_till",
+            ],
           },
         ],
       },
     ],
     order: [["createdAt", "DESC"]],
   });
-};
 
+  // 2. Collect car IDs that already have an active listing
+  const listedCarIds = new Set(listings.map((l) => l.car_id));
+
+  // 3. Fetch ALL cars owned by this seller
+  const allCars = await Car.findAll({
+    where: { host_id: seller_id },
+    attributes: ["id", "year", "kms_driven", "status"],
+    include: [
+      { model: CarMake, as: "make", attributes: ["name"] },
+      { model: CarModel, as: "model", attributes: ["name"] },
+      { model: CarPhoto, as: "photos", attributes: ["photo_url"] },
+    ],
+  });
+
+  // 4. Filter out cars that are already listed
+  const unlistedCars = allCars.filter((c) => !listedCarIds.has(c.id));
+
+  return { listings, unlistedCars };
+};
 // ─── updateListing ────────────────────────────────────────────────────────────
 
 exports.updateListing = async (seller_id, listing_id, data) => {
